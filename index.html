@@ -773,7 +773,7 @@
         // 🛠️ UI COMPONENTS (Header, Row, Fields)
         // ==========================================
 
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onScan, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving }) => {
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving }) => {
             const date = new Date();
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             let dateStr = date.toLocaleDateString('en-US', options);
@@ -814,9 +814,8 @@
                         <div className="flex flex-col lg:items-end gap-2 w-full lg:w-auto">
                             {/* Date removed from here */}
                             <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto items-center">
-                                {/* Botón "+" eliminado de aquí */}
+                                {/* Botón SCAN eliminado */}
                                 
-                                <button onClick={onScan} className="flex items-center gap-3 bg-[#3A4048] hover:bg-[#4A5462] text-white px-6 py-3 rounded-xl font-bold border border-[#4A5462] text-lg shadow-lg hover:shadow-xl hover:border-indigo-500 transition-all active:scale-95 mr-2"><Icons.Scan size={24} className="text-indigo-400" /> SCAN</button>
                                 {!isCloud && (
                                     <div className="flex gap-2 mr-2 pr-2 border-r border-[#3A4048]">
                                         <button onClick={onBackup} className="flex items-center gap-1 bg-[#3A4048] hover:bg-[#4A5462] text-[#f0f6fc]/60 px-3 py-2 rounded-lg text-sm border border-[#4A5462] transition-all" title="Guardar Respaldo (Backup)"><Icons.Save size={16} /></button>
@@ -1724,7 +1723,7 @@
                             onBackup={handleBackup} 
                             onRestore={() => fileInputRef.current.click()} 
                             isCloud={isCloud} 
-                            onScan={() => { setIsScanning(true); setScanAttempt(0); }} 
+                            // onScan eliminado de aquí
                             onShopping={generateShoppingList} 
                             logoSrc={logo} 
                             onLogoUpload={handleLogoChange}
@@ -1736,9 +1735,18 @@
                         />
                         
                         {/* --- NEW LOCATION CONTEXT SWITCHER --- */}
-                        <div className="bg-[#121212]/95 border-b border-[#3A4048] py-2 px-4 overflow-x-auto no-scrollbar">
-                            <div className="flex justify-start md:justify-center items-center gap-2 min-w-max">
-                                <span className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold tracking-widest mr-2 flex items-center gap-1"><Icons.MapPin size={10} /> Active Zone:</span>
+                        <div className="bg-[#121212]/95 border-b border-[#3A4048] p-3">
+                            <div className="max-w-[360px] mx-auto bg-[#1D1F23] rounded-xl border border-[#3A4048] p-2 shadow-lg">
+                                <div className="flex justify-between items-center mb-2 px-1">
+                                    <span className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-2 animate-pulse">
+                                        <Icons.Scan size={12} /> SELECT ZONE TO SCAN
+                                    </span>
+                                    <span className="text-[9px] text-[#f0f6fc]/30 font-mono">
+                                        ACTUAL: {currentLocation.toUpperCase()}
+                                    </span>
+                                </div>
+                                
+                                <div className="grid grid-cols-5 gap-2"> 
                                 {[
                                     {id: 'bar1', label: 'Bar 1'},
                                     {id: 'bar2', label: 'Bar 2'},
@@ -1753,13 +1761,15 @@
                                             setIsScanning(true);
                                             setScanAttempt(0);
                                         }}
-                                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${currentLocation === loc.id 
-                                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)] scale-105' 
-                                            : 'bg-[#1D1F23] border-[#3A4048] text-[#f0f6fc]/50 hover:bg-[#3A4048] hover:text-white'}`}
+                                        className={`aspect-square rounded-lg text-[8px] font-bold transition-all border flex flex-col items-center justify-center gap-1 ${currentLocation === loc.id 
+                                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_10px_rgba(79,70,229,0.4)] scale-105' 
+                                            : 'bg-[#0A0A0A] border-[#3A4048] text-[#f0f6fc]/50 hover:bg-[#3A4048] hover:text-white hover:border-indigo-500/50'}`}
                                     >
-                                        {loc.label}
+                                        <Icons.Scan size={16} className={currentLocation === loc.id ? "text-white" : "text-indigo-500/50"}/>
+                                        <span className="truncate w-full text-center leading-none">{loc.label}</span>
                                     </button>
                                 ))}
+                                </div>
                             </div>
                         </div>
 
@@ -1769,8 +1779,8 @@
                     </div>
                     <input type="file" ref={fileInputRef} style={{display:'none'}} accept=".json" onChange={handleRestoreFile} />
                     
-                    {/* Adjusted top padding to account for new location bar (approx +50px) */}
-                    <div className="pt-[370px] lg:pt-[280px]"></div> 
+                    {/* Adjusted top padding to account for new bigger location bar */}
+                    <div className="pt-[400px] lg:pt-[320px]"></div> 
                     
                     <main className="max-w-5xl mx-auto p-4 space-y-4">
                         {filteredData.length === 0 && <div className="text-center py-20 text-[#f0f6fc]/50"><p>No products found.</p></div>}
