@@ -802,7 +802,7 @@
         // 🛠️ UI COMPONENTS (Header, Row, Fields)
         // ==========================================
 
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving, onToggleSearch, showSearch }) => {
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving, onToggleSearch, showSearch, onToggleZoneSelector, showZoneSelector }) => {
             const date = new Date();
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             let dateStr = date.toLocaleDateString('en-US', options);
@@ -845,6 +845,16 @@
                             <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto items-center">
                                 {/* Botón SCAN eliminado */}
                                 
+                                {/* TOGGLE SCANNER ZONES BUTTON (NEW) */}
+                                <button 
+                                    onClick={onToggleZoneSelector} 
+                                    className={`flex items-center gap-2 bg-[#3A4048] hover:bg-[#4A5462] text-white px-3 py-2 rounded-lg font-medium border border-[#4A5462] text-sm shadow-sm transition-all ${showZoneSelector ? 'bg-indigo-600 border-indigo-500' : ''}`}
+                                    title="Open Scanner Zones"
+                                >
+                                    <Icons.Scan size={18} className={showZoneSelector ? "text-white" : "text-indigo-400"} />
+                                    <span>Scan</span>
+                                </button>
+
                                 {!isCloud && (
                                     <div className="flex gap-2 mr-2 pr-2 border-r border-[#3A4048]">
                                         <button onClick={onBackup} className="flex items-center gap-1 bg-[#3A4048] hover:bg-[#4A5462] text-[#f0f6fc]/60 px-3 py-2 rounded-lg text-sm border border-[#4A5462] transition-all" title="Guardar Respaldo (Backup)"><Icons.Save size={16} /></button>
@@ -1143,6 +1153,7 @@
             const [currentLocation, setCurrentLocation] = useState('bar1'); 
             const [showCountReview, setShowCountReview] = useState(false);
             const [showSearch, setShowSearch] = useState(false); // NEW STATE FOR SEARCH BAR
+            const [showZoneSelector, setShowZoneSelector] = useState(false); // NEW STATE FOR ZONE SELECTOR
             
             // NEW: SAVING STATE
             const [isSaving, setIsSaving] = useState(false);
@@ -1769,46 +1780,51 @@
                             isSaving={isSaving}
                             onToggleSearch={() => setShowSearch(!showSearch)}
                             showSearch={showSearch}
+                            onToggleZoneSelector={() => setShowZoneSelector(!showZoneSelector)}
+                            showZoneSelector={showZoneSelector}
                         />
                         
                         {/* --- NEW LOCATION CONTEXT SWITCHER --- */}
-                        <div className="bg-[#121212]/95 border-b border-[#3A4048] p-3">
-                            <div className="max-w-[360px] mx-auto bg-[#1D1F23] rounded-xl border border-[#3A4048] p-2 shadow-lg">
-                                <div className="flex justify-between items-center mb-2 px-1">
-                                    <span className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-2 animate-pulse">
-                                        <Icons.Scan size={12} /> SELECT ZONE TO SCAN
-                                    </span>
-                                    <span className="text-[9px] text-[#f0f6fc]/30 font-mono">
-                                        ACTUAL: {currentLocation.toUpperCase()}
-                                    </span>
-                                </div>
-                                
-                                <div className="grid grid-cols-5 gap-2"> 
-                                {[
-                                    {id: 'bar1', label: 'Bar 1'},
-                                    {id: 'bar2', label: 'Bar 2'},
-                                    {id: 'bodega', label: 'Storage'},
-                                    {id: 'barroluco', label: 'Barroluco'},
-                                    {id: 'purchases', label: 'Purchases'},
-                                ].map(loc => (
-                                    <button 
-                                        key={loc.id}
-                                        onClick={() => {
-                                            setCurrentLocation(loc.id);
-                                            setIsScanning(true);
-                                            setScanAttempt(0);
-                                        }}
-                                        className={`aspect-square rounded-lg text-[8px] font-bold transition-all border flex flex-col items-center justify-center gap-1 ${currentLocation === loc.id 
-                                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_10px_rgba(79,70,229,0.4)] scale-105' 
-                                            : 'bg-[#0A0A0A] border-[#3A4048] text-[#f0f6fc]/50 hover:bg-[#3A4048] hover:text-white hover:border-indigo-500/50'}`}
-                                    >
-                                        <Icons.Scan size={16} className={currentLocation === loc.id ? "text-white" : "text-indigo-500/50"}/>
-                                        <span className="truncate w-full text-center leading-none">{loc.label}</span>
-                                    </button>
-                                ))}
+                        {showZoneSelector && (
+                            <div className="bg-[#121212]/95 border-b border-[#3A4048] p-3 animate-in">
+                                <div className="max-w-[360px] mx-auto bg-[#1D1F23] rounded-xl border border-[#3A4048] p-2 shadow-lg">
+                                    <div className="flex justify-between items-center mb-2 px-1">
+                                        <span className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-2 animate-pulse">
+                                            <Icons.Scan size={12} /> SELECT ZONE TO SCAN
+                                        </span>
+                                        <span className="text-[9px] text-[#f0f6fc]/30 font-mono">
+                                            ACTUAL: {currentLocation.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-5 gap-2"> 
+                                    {[
+                                        {id: 'bar1', label: 'Bar 1'},
+                                        {id: 'bar2', label: 'Bar 2'},
+                                        {id: 'bodega', label: 'Storage'},
+                                        {id: 'barroluco', label: 'Barroluco'},
+                                        {id: 'purchases', label: 'Purchases'},
+                                    ].map(loc => (
+                                        <button 
+                                            key={loc.id}
+                                            onClick={() => {
+                                                setCurrentLocation(loc.id);
+                                                setIsScanning(true);
+                                                setScanAttempt(0);
+                                                setShowZoneSelector(false); // Close selector after choosing
+                                            }}
+                                            className={`aspect-square rounded-lg text-[8px] font-bold transition-all border flex flex-col items-center justify-center gap-1 ${currentLocation === loc.id 
+                                                ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_10px_rgba(79,70,229,0.4)] scale-105' 
+                                                : 'bg-[#0A0A0A] border-[#3A4048] text-[#f0f6fc]/50 hover:bg-[#3A4048] hover:text-white hover:border-indigo-500/50'}`}
+                                        >
+                                            <Icons.Scan size={16} className={currentLocation === loc.id ? "text-white" : "text-indigo-500/50"}/>
+                                            <span className="truncate w-full text-center leading-none">{loc.label}</span>
+                                        </button>
+                                    ))}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* TOGGLEABLE SEARCH BAR */}
                         {showSearch && (
@@ -1837,8 +1853,8 @@
                     </div>
                     <input type="file" ref={fileInputRef} style={{display:'none'}} accept=".json" onChange={handleRestoreFile} />
                     
-                    {/* Dynamic top padding based on search visibility */}
-                    <div className={`${showSearch ? 'pt-[420px] lg:pt-[340px]' : 'pt-[340px] lg:pt-[260px]'} transition-all duration-300`}></div> 
+                    {/* Dynamic top padding logic */}
+                    <div style={{ paddingTop: showSearch || showZoneSelector ? '380px' : '280px', transition: 'padding-top 0.3s ease' }}></div>
                     
                     <main className="max-w-5xl mx-auto p-4 space-y-4">
                         {filteredData.length === 0 && <div className="text-center py-20 text-[#f0f6fc]/50"><p>No products found.</p></div>}
