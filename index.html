@@ -25,9 +25,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
+    <!-- 7. Google Fonts para los Temas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Black+Ops+One&family=Oswald:wght@400;700&family=Roboto+Condensed:wght@400;700&family=Rock+Salt&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         /* DARK THEME GLOBAL */
-        body { color: #f0f6fc; font-family: sans-serif; transition: background 1s ease; min-height: 100vh; }
+        /* Las variables CSS se actualizarán dinámicamente con React */
+        :root {
+            --theme-font: sans-serif;
+            --theme-text-color: #f0f6fc;
+        }
+        
+        body { 
+            color: var(--theme-text-color); 
+            font-family: var(--theme-font), sans-serif; 
+            transition: background 1s ease, color 0.5s ease; 
+            min-height: 100vh; 
+        }
+        
         .animate-in { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         
@@ -179,7 +196,9 @@
             Sprout: (p) => <IconWrapper {...p}><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></IconWrapper>,
             List: (p) => <IconWrapper {...p}><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></IconWrapper>,
             FileText: (p) => <IconWrapper {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></IconWrapper>,
-            GitMerge: (p) => <IconWrapper {...p}><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></IconWrapper>
+            GitMerge: (p) => <IconWrapper {...p}><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></IconWrapper>,
+            Star: (p) => <IconWrapper {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></IconWrapper>,
+            Award: (p) => <IconWrapper {...p}><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></IconWrapper>
         };
 
         // --- AUDIO HELPER ---
@@ -825,7 +844,7 @@
                                 <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
                                     <span className={`px-2 py-0.5 rounded-full border ${isCloud ? 'bg-indigo-900/50 border-indigo-500 text-indigo-200' : 'bg-[#3A4048] border-[#4A5462] text-[#f0f6fc]/50'} flex items-center gap-1 transition-colors`}>{isCloud ? <Icons.Cloud size={10} /> : <Icons.HardDrive size={10} />}{isCloud ? 'Cloud' : 'Local'}</span>
                                     {/* SEASON INDICATOR - CLICK TO CYCLE */}
-                                    <button onClick={onCycleSeason} className={`px-2 py-1 rounded-full border ${seasonData.border} ${seasonData.color} flex items-center justify-center ${seasonData.accent} shadow-sm transition-all hover:scale-110`} title="Click to change theme">
+                                    <button onClick={onCycleSeason} className={`px-2 py-1 rounded-full border ${seasonData.border} ${seasonData.color} flex items-center justify-center ${seasonData.accent} shadow-sm transition-all hover:scale-110`} title="Cambiar Tema">
                                         <SeasonIcon size={14} />
                                     </button>
                                     {/* DATE MOVED HERE - NEXT TO SEASON ICON */}
@@ -1084,52 +1103,67 @@
             { category: "Non Alcoholic", items: [ createItem("na-1", "Coca Cola"), createItem("na-2", "Diet Coke"), createItem("na-3", "Sprite"), createItem("na-4", "Ginger Ale"), createItem("na-5", "Water Bottle") ]}
         ];
 
-        // Season logic
-        const getSeason = () => {
-            const month = new Date().getMonth(); // 0-11
-            if (month >= 2 && month <= 4) return 'spring';
-            if (month >= 5 && month <= 7) return 'summer';
-            if (month >= 8 && month <= 10) return 'autumn';
-            return 'winter';
-        };
-
-        // ENHANCED SEASON COLORS - MORE VIBRANT GRADIENTS
-        const SEASON_THEMES = {
-            spring: {
-                name: 'Primavera',
-                icon: Icons.Sprout,
-                // More vibrant Dark Green gradient
-                background: "linear-gradient(135deg, #064e3b, #022c22, #000000)", 
-                color: 'bg-emerald-900/40',
-                accent: 'text-emerald-400',
-                border: 'border-emerald-500/30'
+        // --- THEMES CONFIGURATION ---
+        const APP_THEMES = {
+            spiderman: {
+                name: 'Spidey',
+                icon: Icons.GitMerge, // Spider web like
+                background: "linear-gradient(135deg, #7f1d1d 0%, #1e3a8a 100%)", // Red to Blue
+                color: 'bg-red-900/40',
+                accent: 'text-red-500',
+                border: 'border-red-500/50',
+                font: "'Bangers', cursive", // Comic style
+                textColor: '#ffffff'
             },
-            summer: {
-                name: 'Verano',
+            simpsons: {
+                name: 'Springfield',
                 icon: Icons.Sun,
-                // More vibrant Dark Orange gradient
-                background: "linear-gradient(135deg, #7c2d12, #431407, #000000)", 
-                color: 'bg-orange-900/40',
-                accent: 'text-orange-400',
-                border: 'border-orange-500/30'
+                background: "linear-gradient(135deg, #facc15 0%, #60a5fa 100%)", // Yellow to Blue
+                color: 'bg-yellow-400/20',
+                accent: 'text-yellow-400',
+                border: 'border-yellow-400/50',
+                font: "'Rock Salt', cursive", // Handwritten style
+                textColor: '#ffffff' 
             },
-            autumn: {
-                name: 'Otoño',
-                icon: Icons.Leaf,
-                // More vibrant Amber/Red gradient
-                background: "linear-gradient(135deg, #451a03, #290d02, #000000)", 
-                color: 'bg-amber-900/40',
-                accent: 'text-amber-400',
-                border: 'border-amber-500/30'
+            argentina: {
+                name: 'Campeones',
+                icon: Icons.Sun, // Sol de Mayo
+                background: "linear-gradient(135deg, #60a5fa 0%, #ffffff 50%, #60a5fa 100%)",
+                color: 'bg-sky-400/20',
+                accent: 'text-sky-400',
+                border: 'border-sky-400/50',
+                font: "'Oswald', sans-serif",
+                textColor: '#0f172a' // Dark text for contrast on light bg
             },
-            winter: {
-                name: 'Invierno',
-                icon: Icons.Snowflake,
-                // More vibrant Blue gradient
-                background: "linear-gradient(135deg, #1e3a8a, #0f172a, #000000)", 
-                color: 'bg-blue-900/40',
-                accent: 'text-blue-400',
-                border: 'border-blue-500/30'
+            camouflage: {
+                name: 'Armada',
+                icon: Icons.MapPin,
+                background: "linear-gradient(135deg, #3f4f3a 0%, #5c5346 50%, #1a1a1a 100%)",
+                color: 'bg-stone-600/40',
+                accent: 'text-stone-400',
+                border: 'border-stone-500/50',
+                font: "'Black Ops One', system-ui",
+                textColor: '#e7e5e4'
+            },
+            river: {
+                name: 'El Más Grande',
+                icon: Icons.Award,
+                background: "linear-gradient(135deg, #ffffff 0%, #ef4444 60%, #000000 100%)",
+                color: 'bg-red-600/20',
+                accent: 'text-red-500',
+                border: 'border-red-500/50',
+                font: "'Roboto Condensed', sans-serif",
+                textColor: '#ffffff'
+            },
+            boca: {
+                name: 'Xeneize',
+                icon: Icons.Star, 
+                background: "linear-gradient(135deg, #1e3a8a 0%, #fbbf24 50%, #1e3a8a 100%)",
+                color: 'bg-blue-800/40',
+                accent: 'text-yellow-400',
+                border: 'border-yellow-400/50',
+                font: "'Roboto Slab', serif",
+                textColor: '#fbbf24' // Yellow text
             }
         };
 
@@ -1152,8 +1186,8 @@
             const [showAddProduct, setShowAddProduct] = useState(false);
             const [currentLocation, setCurrentLocation] = useState('bar1'); 
             const [showCountReview, setShowCountReview] = useState(false);
-            const [showSearch, setShowSearch] = useState(false); // NEW STATE FOR SEARCH BAR
-            const [showZoneSelector, setShowZoneSelector] = useState(false); // NEW STATE FOR ZONE SELECTOR
+            const [showSearch, setShowSearch] = useState(false); 
+            const [showZoneSelector, setShowZoneSelector] = useState(false); 
             
             // NEW: SAVING STATE
             const [isSaving, setIsSaving] = useState(false);
@@ -1163,25 +1197,36 @@
             const [pendingImportData, setPendingImportData] = useState(null);
             const [showImportModal, setShowImportModal] = useState(false);
 
-            // Season State with Cycle Ability
-            const [season, setSeason] = useState(getSeason());
-            const currentTheme = SEASON_THEMES[season];
+            // Theme State
+            const [currentThemeKey, setCurrentThemeKey] = useState('spiderman'); // Default theme
+            const currentTheme = APP_THEMES[currentThemeKey];
 
             useEffect(() => {
-                // Apply background to body
+                // Apply background and font styles to body
                 document.body.style.background = currentTheme.background;
                 document.body.style.backgroundAttachment = "fixed";
-                // Ensure text color is reset just in case
-                document.body.style.color = '#f0f6fc';
-            }, [season, currentTheme]);
+                
+                // Set CSS variables for dynamic styling
+                document.documentElement.style.setProperty('--theme-font', currentTheme.font);
+                document.documentElement.style.setProperty('--theme-text-color', currentTheme.textColor);
+                
+                // Force text color update if needed for contrast
+                if (currentThemeKey === 'argentina') {
+                     document.body.classList.remove('text-[#f0f6fc]');
+                     document.body.classList.add('text-slate-900');
+                } else {
+                     document.body.classList.add('text-[#f0f6fc]');
+                     document.body.classList.remove('text-slate-900');
+                }
+
+            }, [currentThemeKey, currentTheme]);
             
-            const cycleSeason = () => {
-                const seasons = ['spring', 'summer', 'autumn', 'winter'];
-                const currentIdx = seasons.indexOf(season);
-                const nextIdx = (currentIdx + 1) % seasons.length;
-                const nextSeason = seasons[nextIdx];
-                setSeason(nextSeason);
-                // Also play sound for feedback
+            const cycleTheme = () => {
+                const themes = Object.keys(APP_THEMES);
+                const currentIdx = themes.indexOf(currentThemeKey);
+                const nextIdx = (currentIdx + 1) % themes.length;
+                const nextThemeKey = themes[nextIdx];
+                setCurrentThemeKey(nextThemeKey);
                 playSound('success');
             };
 
@@ -1775,7 +1820,7 @@
                             onLogoUpload={handleLogoChange}
                             onAddProduct={() => setShowAddProduct(true)}
                             seasonData={currentTheme}
-                            onCycleSeason={cycleSeason}
+                            onCycleSeason={cycleTheme}
                             onShowCount={() => setShowCountReview(true)}
                             isSaving={isSaving}
                             onToggleSearch={() => setShowSearch(!showSearch)}
