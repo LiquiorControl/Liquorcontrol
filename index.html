@@ -422,8 +422,24 @@
         const QuickEditModal = ({ item, onClose, onUpdate, initialLocation = 'bodega' }) => {
             if (!item) return null;
             const [activeField, setActiveField] = useState(initialLocation);
+            
+            // --- NUEVO: Lógica para rastrear cuánto se agrega en esta sesión ---
+            // Guardamos el valor inicial al abrir la ventana para calcular la diferencia
+            const [sessionStartValue, setSessionStartValue] = useState(() => parseFloat(item[initialLocation]) || 0);
+
+            // Función para cambiar de ubicación y resetear el contador de sesión
+            const handleLocationChange = (locId) => {
+                setActiveField(locId);
+                setSessionStartValue(parseFloat(item[locId]) || 0);
+            };
+
             const currentValue = parseFloat(item[activeField]) || 0;
             const [lastDelta, setLastDelta] = useState(null);
+
+            // Calculamos cuánto se ha agregado en esta sesión (Total Actual - Total Inicial)
+            const addedThisSession = currentValue - sessionStartValue;
+            const addedSign = addedThisSession > 0 ? "+" : "";
+            const addedColor = addedThisSession > 0 ? "text-emerald-400" : (addedThisSession < 0 ? "text-red-400" : "text-[#f0f6fc]/30");
 
             const handleDelta = (delta) => {
                 if (delta > 0) playSound('add'); else playSound('sub');
@@ -455,21 +471,34 @@
                         <div className="p-2 bg-[#1D1F23] border-b border-[#3A4048] overflow-x-auto">
                             <div className="flex gap-2">
                                 {locations.map(loc => (
-                                    <button key={loc.id} onClick={() => setActiveField(loc.id)} className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${activeField === loc.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : 'bg-[#3A4048] text-[#f0f6fc]/60 hover:bg-[#4A5462]'}`}>{loc.label}</button>
+                                    <button key={loc.id} onClick={() => handleLocationChange(loc.id)} className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${activeField === loc.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : 'bg-[#3A4048] text-[#f0f6fc]/60 hover:bg-[#4A5462]'}`}>{loc.label}</button>
                                 ))}
                             </div>
                         </div>
                         <div className="flex-1 p-6 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#121212] overflow-y-auto">
-                            <div className="text-center mb-8 relative">
+                            <div className="text-center mb-8 relative w-full">
                                 <div className="text-[#f0f6fc]/50 text-sm uppercase font-bold tracking-wider mb-2">Total en {locations.find(l => l.id === activeField)?.label}</div>
-                                <div className="text-7xl font-black text-white font-mono tracking-tight tabular-nums relative inline-block">
-                                    {currentValue}
-                                    {lastDelta !== null && (
-                                        <span className={`absolute -right-16 top-0 text-3xl font-bold ${lastDelta > 0 ? 'text-emerald-400' : 'text-red-400'} animate-float`}>
-                                            {lastDelta > 0 ? '+' : ''}{lastDelta}
+                                
+                                {/* Contenedor Principal de Números */}
+                                <div className="flex flex-col items-center justify-center">
+                                    <div className="text-7xl font-black text-white font-mono tracking-tight tabular-nums relative inline-block">
+                                        {currentValue}
+                                        {lastDelta !== null && (
+                                            <span className={`absolute -right-16 top-0 text-3xl font-bold ${lastDelta > 0 ? 'text-emerald-400' : 'text-red-400'} animate-float`}>
+                                                {lastDelta > 0 ? '+' : ''}{lastDelta}
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    {/* --- NUEVO: Indicador de "Agregado en esta sesión" --- */}
+                                    <div className={`mt-2 px-4 py-1 rounded-full bg-[#0A0A0A] border border-[#3A4048] flex items-center gap-2 ${addedThisSession !== 0 ? 'opacity-100' : 'opacity-50'}`}>
+                                        <span className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold">Sesión:</span>
+                                        <span className={`text-xl font-bold font-mono ${addedColor}`}>
+                                            {addedSign}{Math.round(addedThisSession * 10) / 10}
                                         </span>
-                                    )}
+                                    </div>
                                 </div>
+
                             </div>
                             <div className="w-full grid grid-cols-2 gap-6">
                                 <div className="flex flex-col gap-2 items-end">
@@ -773,7 +802,7 @@
         // 🛠️ UI COMPONENTS (Header, Row, Fields)
         // ==========================================
 
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving }) => {
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving, onToggleSearch, showSearch }) => {
             const date = new Date();
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             let dateStr = date.toLocaleDateString('en-US', options);
@@ -830,6 +859,11 @@
                                 {/* SHOPPING - Compact */}
                                 <button onClick={onShopping} className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-lg shadow-amber-900/20 active:scale-95 text-xs border border-amber-500"><Icons.ShoppingCart size={16} /> Shopping</button>
                                 
+                                {/* SEARCH BUTTON (NEW) */}
+                                <button onClick={onToggleSearch} className={`flex items-center justify-center bg-[#3A4048] hover:bg-[#4A5462] text-white w-8 h-8 rounded-lg font-medium shadow-lg active:scale-95 border border-[#4A5462] transition-all ${showSearch ? 'bg-indigo-600 border-indigo-500' : ''}`} title="Search Product">
+                                    <Icons.Search size={16} />
+                                </button>
+
                                 {/* COUNT - Compact */}
                                 <button onClick={onShowCount} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-lg shadow-blue-900/20 active:scale-95 text-xs border border-blue-500"><Icons.List size={16} /> Count</button>
 
@@ -1108,6 +1142,7 @@
             const [showAddProduct, setShowAddProduct] = useState(false);
             const [currentLocation, setCurrentLocation] = useState('bar1'); 
             const [showCountReview, setShowCountReview] = useState(false);
+            const [showSearch, setShowSearch] = useState(false); // NEW STATE FOR SEARCH BAR
             
             // NEW: SAVING STATE
             const [isSaving, setIsSaving] = useState(false);
@@ -1732,6 +1767,8 @@
                             onCycleSeason={cycleSeason}
                             onShowCount={() => setShowCountReview(true)}
                             isSaving={isSaving}
+                            onToggleSearch={() => setShowSearch(!showSearch)}
+                            showSearch={showSearch}
                         />
                         
                         {/* --- NEW LOCATION CONTEXT SWITCHER --- */}
@@ -1773,14 +1810,35 @@
                             </div>
                         </div>
 
-                        <div className="bg-[#0A0A0A]/50 p-4 border-b border-[#3A4048] backdrop-blur-sm">
-                            <div className="max-w-5xl mx-auto relative"><Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50" size={20} /><input type="text" placeholder="Search product..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#1D1F23] rounded-xl pl-10 pr-4 py-3 text-white border border-[#3A4048] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-[#f0f6fc]/40" /></div>
-                        </div>
+                        {/* TOGGLEABLE SEARCH BAR */}
+                        {showSearch && (
+                            <div className="bg-[#0A0A0A]/90 p-4 border-b border-[#3A4048] backdrop-blur-sm animate-in">
+                                <div className="max-w-5xl mx-auto relative flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50" size={20} />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search product..." 
+                                            value={searchTerm} 
+                                            onChange={(e) => setSearchTerm(e.target.value)} 
+                                            className="w-full bg-[#1D1F23] rounded-xl pl-10 pr-4 py-3 text-white border border-[#3A4048] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-[#f0f6fc]/40" 
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={() => { setShowSearch(false); setSearchTerm(""); }} 
+                                        className="bg-[#3A4048] hover:bg-[#4A5462] text-white px-4 rounded-xl font-bold border border-[#4A5462]"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <input type="file" ref={fileInputRef} style={{display:'none'}} accept=".json" onChange={handleRestoreFile} />
                     
-                    {/* Adjusted top padding to account for new bigger location bar */}
-                    <div className="pt-[400px] lg:pt-[320px]"></div> 
+                    {/* Dynamic top padding based on search visibility */}
+                    <div className={`${showSearch ? 'pt-[420px] lg:pt-[340px]' : 'pt-[340px] lg:pt-[260px]'} transition-all duration-300`}></div> 
                     
                     <main className="max-w-5xl mx-auto p-4 space-y-4">
                         {filteredData.length === 0 && <div className="text-center py-20 text-[#f0f6fc]/50"><p>No products found.</p></div>}
