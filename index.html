@@ -441,21 +441,12 @@
         const QuickEditModal = ({ item, onClose, onUpdate, initialLocation = 'bodega' }) => {
             if (!item) return null;
             const [activeField, setActiveField] = useState(initialLocation);
+            
+            // --- NUEVO: Lógica para rastrear cuánto se agrega en esta sesión ---
+            // Guardamos el valor inicial al abrir la ventana para calcular la diferencia
             const [sessionStartValue, setSessionStartValue] = useState(() => parseFloat(item[initialLocation]) || 0);
 
-            // Scale state
-            const [scaleConnected, setScaleConnected] = useState(false);
-            const [isConnecting, setIsConnecting] = useState(false); // Estado de carga
-            const [scaleWeight, setScaleWeight] = useState(0);
-            const [showScaleInput, setShowScaleInput] = useState(false);
-            
-            // Item weights
-            const [weightEmpty, setWeightEmpty] = useState(parseFloat(item.weight_empty) || 0);
-            const [weightFull, setWeightFull] = useState(parseFloat(item.weight_full) || 0);
-            
-            // Calculated units
-            const [calculatedUnits, setCalculatedUnits] = useState(null);
-
+            // Función para cambiar de ubicación y resetear el contador de sesión
             const handleLocationChange = (locId) => {
                 setActiveField(locId);
                 setSessionStartValue(parseFloat(item[locId]) || 0);
@@ -464,101 +455,21 @@
             const currentValue = parseFloat(item[activeField]) || 0;
             const [lastDelta, setLastDelta] = useState(null);
 
+            // Calculamos cuánto se ha agregado en esta sesión (Total Actual - Total Inicial)
             const addedThisSession = currentValue - sessionStartValue;
             const addedSign = addedThisSession > 0 ? "+" : "";
             const addedColor = addedThisSession > 0 ? "text-emerald-400" : (addedThisSession < 0 ? "text-red-400" : "text-[#f0f6fc]/30");
 
             const handleDelta = (delta) => {
                 if (delta > 0) playSound('add'); else playSound('sub');
-                const next = Math.round((currentValue + delta) * 100) / 100; 
+                const next = Math.round((currentValue + delta) * 10) / 10;
                 const newValue = Math.max(0, next);
                 
+                // Show visual feedback (+1 bubble)
                 setLastDelta(delta);
                 setTimeout(() => setLastDelta(null), 800);
 
                 onUpdate(item.id, activeField, newValue);
-            };
-
-            // --- REAL BLUETOOTH CONNECTION LOGIC ---
-            const connectScale = async () => {
-                // Verificar si el navegador soporta Web Bluetooth
-                if (!navigator.bluetooth) {
-                    alert("Tu navegador no soporta Bluetooth Web. Por favor ingresa el peso manualmente.");
-                    setShowScaleInput(true);
-                    return;
-                }
-
-                try {
-                    setIsConnecting(true);
-                    // Solicitamos el dispositivo. Etekcity suele usar servicios genéricos o propietarios.
-                    // Usamos acceptAllDevices para que puedas encontrarla en la lista.
-                    const device = await navigator.bluetooth.requestDevice({
-                        acceptAllDevices: true,
-                        optionalServices: ['weight_scale', 'body_composition', 0x181D, 0x181B] // Servicios comunes de balanzas
-                    });
-
-                    // Intentamos conectar (esto confirma que el dispositivo está emparejado)
-                    const server = await device.gatt.connect();
-                    
-                    setScaleConnected(true);
-                    playSound('success');
-                    
-                    // Mostramos el panel de cálculo inmediatamente
-                    setShowScaleInput(true);
-                    
-                    // NOTA: Leer los datos automáticamente requiere saber el "Servicio UUID" exacto de tu modelo Etekcity.
-                    // Como varían, aquí abrimos el panel para que veas que está "Conectado" y puedas
-                    // ingresar el peso que ves en la pantalla de la balanza si no llega automático.
-                    
-                } catch (err) {
-                    console.error("Bluetooth Error:", err);
-                    if (err.name !== 'NotFoundError') { // Ignorar si el usuario canceló
-                        alert("No se pudo conectar a la balanza: " + err.message);
-                    }
-                    // Fallback: Mostrar input manual
-                    setShowScaleInput(true);
-                } finally {
-                    setIsConnecting(false);
-                }
-            };
-            
-            const calculateFromWeight = () => {
-                if (weightFull <= 0) {
-                    alert("Por favor ingresa el peso de una botella llena primero.");
-                    return;
-                }
-                if (weightEmpty >= weightFull) {
-                    alert("El peso vacío no puede ser mayor o igual al lleno.");
-                    return;
-                }
-                
-                // Fórmula: (Peso Actual - Botella Vacía) / (Botella Llena - Botella Vacía)
-                const liquidWeight = scaleWeight - weightEmpty;
-                const totalLiquidWeight = weightFull - weightEmpty;
-                
-                let units = liquidWeight / totalLiquidWeight;
-                
-                // Limitar entre 0 y un poquito más de 1 (por si está muy llena)
-                units = Math.max(0, units);
-                
-                // Redondeamos a 2 decimales (ej. 0.45 botellas)
-                setCalculatedUnits(units.toFixed(2));
-            };
-            
-            const applyCalculatedUnits = () => {
-                if (calculatedUnits) {
-                     // Guardamos el cálculo como el nuevo valor del inventario
-                     onUpdate(item.id, activeField, parseFloat(calculatedUnits));
-                     
-                     // Guardamos los pesos de referencia en el producto para no tener que escribirlos la próxima vez
-                     if(weightEmpty !== parseFloat(item.weight_empty) || weightFull !== parseFloat(item.weight_full)) {
-                         onUpdate(item.id, { weight_empty: weightEmpty, weight_full: weightFull });
-                     }
-                     
-                     playSound('success');
-                     setCalculatedUnits(null);
-                     setScaleWeight(0);
-                }
             };
 
             const locations = [
@@ -583,10 +494,11 @@
                                 ))}
                             </div>
                         </div>
-                        <div className="flex-1 p-6 flex flex-col items-center justify-start bg-gradient-to-b from-[#1D1F23] to-[#121212] overflow-y-auto">
+                        <div className="flex-1 p-6 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#121212] overflow-y-auto">
                             <div className="text-center mb-8 relative w-full">
                                 <div className="text-[#f0f6fc]/50 text-sm uppercase font-bold tracking-wider mb-2">Total en {locations.find(l => l.id === activeField)?.label}</div>
                                 
+                                {/* Contenedor Principal de Números */}
                                 <div className="flex flex-col items-center justify-center">
                                     <div className="text-7xl font-black text-white font-mono tracking-tight tabular-nums relative inline-block">
                                         {currentValue}
@@ -597,83 +509,16 @@
                                         )}
                                     </div>
                                     
+                                    {/* --- NUEVO: Indicador de "Agregado en esta sesión" --- */}
                                     <div className={`mt-2 px-4 py-1 rounded-full bg-[#0A0A0A] border border-[#3A4048] flex items-center gap-2 ${addedThisSession !== 0 ? 'opacity-100' : 'opacity-50'}`}>
                                         <span className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold">Sesión:</span>
                                         <span className={`text-xl font-bold font-mono ${addedColor}`}>
-                                            {addedSign}{Math.round(addedThisSession * 100) / 100}
+                                            {addedSign}{Math.round(addedThisSession * 10) / 10}
                                         </span>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            {/* --- SCALE SECTION --- */}
-                            <div className="w-full bg-[#0A0A0A] p-4 rounded-xl border border-[#3A4048] mb-6 shadow-lg">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                        <Icons.Scale className={scaleConnected ? "text-emerald-400" : "text-indigo-400"} size={16}/> 
-                                        {scaleConnected ? "Balanza Conectada" : "Balanza / Peso Manual"}
-                                    </h3>
-                                    <button 
-                                        onClick={connectScale} 
-                                        disabled={isConnecting || scaleConnected}
-                                        className={`px-3 py-1 text-white text-xs rounded flex items-center gap-1 transition-all ${scaleConnected ? 'bg-emerald-600 cursor-default' : 'bg-indigo-600 hover:bg-indigo-500'}`}
-                                    >
-                                        {isConnecting ? '...' : (scaleConnected ? 'OK' : <><Icons.Bluetooth size={12}/> Conectar</>)}
-                                    </button>
-                                </div>
-                                
-                                {/* Always allow opening manual input if bluetooth fails or is not used */}
-                                <div className={`${showScaleInput ? 'block' : 'hidden'} space-y-4 animate-in`}>
-                                    <div className="grid grid-cols-2 gap-3 p-3 bg-[#1D1F23] rounded-lg border border-[#3A4048]">
-                                        <div>
-                                            <label className="text-[9px] text-[#f0f6fc]/50 uppercase font-bold block mb-1">Peso Vacío (g)</label>
-                                            <input type="number" value={weightEmpty || ''} onChange={(e) => setWeightEmpty(parseFloat(e.target.value))} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded px-2 py-1.5 text-white text-sm focus:border-indigo-500 outline-none" placeholder="Ej: 450"/>
-                                        </div>
-                                        <div>
-                                            <label className="text-[9px] text-[#f0f6fc]/50 uppercase font-bold block mb-1">Peso Lleno (g)</label>
-                                            <input type="number" value={weightFull || ''} onChange={(e) => setWeightFull(parseFloat(e.target.value))} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded px-2 py-1.5 text-white text-sm focus:border-indigo-500 outline-none" placeholder="Ej: 1400"/>
-                                        </div>
-                                        <div className="col-span-2 text-[9px] text-[#f0f6fc]/30 italic text-center">
-                                            * Ingresa estos datos una vez y se guardarán para este producto.
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex items-end gap-3">
-                                        <div className="flex-1">
-                                             <label className="text-[10px] text-indigo-400 uppercase font-bold mb-1 block">PESO ACTUAL DE BOTELLA (g)</label>
-                                             <input 
-                                                type="number" 
-                                                value={scaleWeight || ''} 
-                                                onChange={(e) => {
-                                                    setScaleWeight(parseFloat(e.target.value));
-                                                    setCalculatedUnits(null); // Reset calc on change
-                                                }} 
-                                                className="w-full bg-[#1D1F23] border border-indigo-500 rounded-lg px-3 py-2 text-white text-xl font-mono font-bold focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] outline-none transition-all" 
-                                                placeholder="0.0"
-                                            />
-                                        </div>
-                                        <button onClick={calculateFromWeight} className="px-4 py-2 bg-[#3A4048] hover:bg-[#4A5462] text-white rounded-lg text-sm font-bold h-[46px] border border-[#4A5462]">Calcular</button>
-                                    </div>
-                                    
-                                    {calculatedUnits && (
-                                        <div className="bg-emerald-900/20 border border-emerald-500/50 p-3 rounded-xl flex justify-between items-center mt-2 animate-in shadow-lg shadow-emerald-900/10">
-                                            <div>
-                                                <div className="text-[10px] text-emerald-400 uppercase font-bold tracking-wider">Resultado Calculado</div>
-                                                <div className="text-2xl font-black text-white leading-none mt-1">{calculatedUnits} <span className="text-xs font-normal opacity-60 text-[#f0f6fc]">Botellas</span></div>
-                                            </div>
-                                            <button onClick={applyCalculatedUnits} className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-lg transform active:scale-95 transition-all">
-                                                USAR DATO
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                                {!showScaleInput && !scaleConnected && (
-                                    <button onClick={() => setShowScaleInput(true)} className="w-full text-xs text-[#f0f6fc]/40 hover:text-white underline mt-2">
-                                        Ingresar peso manualmente
-                                    </button>
-                                )}
-                            </div>
 
+                            </div>
                             <div className="w-full grid grid-cols-2 gap-6">
                                 <div className="flex flex-col gap-2 items-end">
                                     <button onClick={() => handleDelta(-24)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">- 24</button>
@@ -973,7 +818,10 @@
         };
 
         // ==========================================
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving, onToggleSearch, showSearch, onToggleZoneSelector, showZoneSelector, onDownloadTemplate }) => {
+        // 🛠️ UI COMPONENTS (Header, Row, Fields)
+        // ==========================================
+
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, logoSrc, onLogoUpload, seasonData, onCycleSeason, onShowCount, isSaving, onToggleSearch, showSearch, onToggleZoneSelector, showZoneSelector }) => {
             const date = new Date();
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             let dateStr = date.toLocaleDateString('en-US', options);
@@ -992,10 +840,7 @@
                             </div>
                             <input type="file" id="logo-upload" accept="image/*" className="hidden" onChange={onLogoUpload} />
                             <div>
-                                <h1 className="font-bold text-lg leading-tight text-white flex items-center gap-2">
-                                    Master Bar Control
-                                    <span className="text-[10px] font-mono text-[#f0f6fc]/40 border border-[#3A4048] px-1.5 py-0.5 rounded bg-[#0A0A0A]">v2.6</span>
-                                </h1>
+                                <h1 className="font-bold text-lg leading-tight text-white">Master Bar Control</h1>
                                 <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
                                     <span className={`px-2 py-0.5 rounded-full border ${isCloud ? 'bg-indigo-900/50 border-indigo-500 text-indigo-200' : 'bg-[#3A4048] border-[#4A5462] text-[#f0f6fc]/50'} flex items-center gap-1 transition-colors`}>{isCloud ? <Icons.Cloud size={10} /> : <Icons.HardDrive size={10} />}{isCloud ? 'Cloud' : 'Local'}</span>
                                     {/* SEASON INDICATOR - CLICK TO CYCLE */}
@@ -1041,7 +886,7 @@
                                 <button onClick={onNewPeriod} className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium shadow-lg shadow-indigo-900/20 active:scale-95 border border-indigo-500 transition-all" title="Next Period"><Icons.ArrowRight size={20} /></button>
                                 
                                 {/* SHOPPING - Compact */}
-                                <button onClick={onShopping} className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-lg shadow-orange-900/20 active:scale-95 text-xs border border-orange-500"><Icons.ShoppingCart size={16} /> Shop</button>
+                                <button onClick={onShopping} className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg font-medium shadow-lg shadow-amber-900/20 active:scale-95 text-xs border border-amber-500"><Icons.ShoppingCart size={16} /> Shop</button>
                                 
                                 {/* SEARCH BUTTON */}
                                 <button onClick={onToggleSearch} className={`flex items-center justify-center bg-[#3A4048] hover:bg-[#4A5462] text-white w-8 h-8 rounded-lg font-medium shadow-lg active:scale-95 border border-[#4A5462] transition-all ${showSearch ? 'bg-indigo-600 border-indigo-500' : ''}`} title="Search Product">
