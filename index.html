@@ -458,8 +458,32 @@
             if (!item) return null;
             const [activeField, setActiveField] = useState(initialLocation);
             
-            // For Bar 1 Sub-zones
-            const [subZone, setSubZone] = useState('bar1_cooler'); // Default sub-zone
+            // Define Zones Configuration
+            const zonesConfig = {
+                bar1: [
+                    { id: 'bar1_cooler', label: 'Cooler', icon: '🧊' },
+                    { id: 'bar1_small_cooler_1', label: 'Small 1', icon: '❄️' },
+                    { id: 'bar1_small_cooler_2', label: 'Small 2', icon: '❄️' },
+                    { id: 'bar1_reaching', label: 'Reaching', icon: '✋' },
+                    { id: 'bar1_shelf', label: 'Shelf', icon: '🗄️' },
+                    { id: 'bar1_well_1', label: 'Well 1', icon: '🥃' },
+                    { id: 'bar1_well_2', label: 'Well 2', icon: '🥃' },
+                ],
+                bar2: [
+                    { id: 'bar2_cooler', label: 'Cooler', icon: '🧊' },
+                    { id: 'bar2_small_cooler', label: 'Small Cooler', icon: '❄️' },
+                ],
+                bodega: [
+                    { id: 'bodega_closet', label: 'Closet', icon: '🚪' },
+                    { id: 'bodega_shelves', label: 'Shelves', icon: '🗄️' },
+                ]
+            };
+
+            const hasSubZones = zonesConfig[activeField] !== undefined;
+            const currentZones = zonesConfig[activeField] || [];
+            
+            // Sub-zone state initialized with the first zone of the active location if applicable
+            const [subZone, setSubZone] = useState(hasSubZones ? currentZones[0].id : null);
 
             // --- NUEVO: Lógica para rastrear cuánto se agrega en esta sesión ---
             // Guardamos el valor inicial al abrir la ventana para calcular la diferencia
@@ -468,28 +492,35 @@
             // Función para cambiar de ubicación y resetear el contador de sesión
             const handleLocationChange = (locId) => {
                 setActiveField(locId);
-                // If switching TO bar 1, default sub zone should be first one
-                if (locId === 'bar1') {
-                    setSubZone('bar1_cooler');
-                    setSessionStartValue(parseFloat(item['bar1_cooler']) || 0); // Track session for subzone? Or total? Let's track active field context
+                const newZones = zonesConfig[locId];
+                
+                if (newZones) {
+                    // If new location has zones, select the first one
+                    const firstZoneId = newZones[0].id;
+                    setSubZone(firstZoneId);
+                    // Use item value? Note: session tracking logic for subzones is complex, keeping simple to main field for now or resetting
+                    setSessionStartValue(parseFloat(item[locId]) || 0); 
                 } else {
+                    setSubZone(null);
                     setSessionStartValue(parseFloat(item[locId]) || 0);
                 }
             };
             
             const handleSubZoneChange = (zoneId) => {
                 setSubZone(zoneId);
-                setSessionStartValue(parseFloat(item[zoneId]) || 0);
+                // When subzone changes, we are just moving focus, session tracking stays on total for simplicity or resets?
+                // Let's keep it simple: visual feedback is per button press mostly.
             };
 
             // Determine what value we are editing
-            const isBar1 = activeField === 'bar1';
-            const targetField = isBar1 ? subZone : activeField;
+            const targetField = hasSubZones ? subZone : activeField;
             const currentValue = parseFloat(item[targetField]) || 0;
             const [lastDelta, setLastDelta] = useState(null);
 
             // Calculamos cuánto se ha agregado en esta sesión (Total Actual - Total Inicial)
-            const addedThisSession = currentValue - sessionStartValue;
+            // Note: This logic tracks the TOTAL of the location (e.g. Bar1 Total), not subzone specific delta
+            const currentTotalValue = parseFloat(item[activeField]) || 0;
+            const addedThisSession = currentTotalValue - sessionStartValue;
             const addedSign = addedThisSession > 0 ? "+" : "";
             const addedColor = addedThisSession > 0 ? "text-emerald-400" : (addedThisSession < 0 ? "text-red-400" : "text-[#f0f6fc]/30");
 
@@ -502,21 +533,20 @@
                 setLastDelta(delta);
                 setTimeout(() => setLastDelta(null), 800);
 
-                if (isBar1) {
-                    // Update specific zone AND total bar1
+                if (hasSubZones) {
+                    // Update specific zone AND total for the location
                     const updates = { [subZone]: newValue };
                     
-                    // Calculate new total for Bar 1
-                    const bar1Zones = ['bar1_cooler', 'bar1_small_cooler_1', 'bar1_small_cooler_2', 'bar1_reaching', 'bar1_shelf', 'bar1_well_1', 'bar1_well_2'];
+                    // Calculate new total for the location (sum all zones)
                     let newTotal = 0;
-                    bar1Zones.forEach(z => {
-                        if (z === subZone) newTotal += newValue;
-                        else newTotal += (parseFloat(item[z]) || 0);
+                    currentZones.forEach(z => {
+                        if (z.id === subZone) newTotal += newValue;
+                        else newTotal += (parseFloat(item[z.id]) || 0);
                     });
                     
                     // Round total to avoid float errors
                     newTotal = Math.round(newTotal * 10) / 10;
-                    updates['bar1'] = newTotal;
+                    updates[activeField] = newTotal;
                     
                     onUpdate(item.id, updates);
                 } else {
@@ -525,23 +555,13 @@
             };
 
             const locations = [
-                { id: 'bodega', label: 'Storage (Bodega)' },
-                { id: 'bar1', label: 'Bar 1 (Zonas)' }, // Changed label
+                { id: 'bodega', label: 'Storage' },
+                { id: 'bar1', label: 'Bar 1' },
                 { id: 'bar2', label: 'Bar 2' },
                 { id: 'barroluco', label: 'Barroluco' },
-                { id: 'purchases', label: 'Purchases (Compras)' }
+                { id: 'purchases', label: 'Purchases' }
             ];
             
-            const bar1Zones = [
-                { id: 'bar1_cooler', label: 'Cooler', icon: '🧊' },
-                { id: 'bar1_small_cooler_1', label: 'Small 1', icon: '❄️' },
-                { id: 'bar1_small_cooler_2', label: 'Small 2', icon: '❄️' },
-                { id: 'bar1_reaching', label: 'Reaching', icon: '✋' },
-                { id: 'bar1_shelf', label: 'Shelf', icon: '🗄️' },
-                { id: 'bar1_well_1', label: 'Well 1', icon: '🥃' },
-                { id: 'bar1_well_2', label: 'Well 2', icon: '🥃' },
-            ];
-
             return (
                 <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[60] backdrop-blur-md animate-in p-4">
                     <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -559,11 +579,11 @@
                             </div>
                         </div>
 
-                        {/* Bar 1 Sub-Zones Selector */}
-                        {isBar1 && (
+                        {/* Sub-Zones Selector (Dynamic) */}
+                        {hasSubZones && (
                             <div className="p-2 bg-[#16181c] border-b border-[#3A4048] overflow-x-auto animate-in">
                                 <div className="flex gap-2">
-                                    {bar1Zones.map(zone => (
+                                    {currentZones.map(zone => (
                                         <button 
                                             key={zone.id} 
                                             onClick={() => handleSubZoneChange(zone.id)} 
@@ -580,8 +600,8 @@
                         <div className="flex-1 p-6 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#121212] overflow-y-auto">
                             <div className="text-center mb-8 relative w-full">
                                 <div className="text-[#f0f6fc]/50 text-sm uppercase font-bold tracking-wider mb-2">
-                                    {isBar1 
-                                        ? <span>Editando: <span className="text-indigo-400">{bar1Zones.find(z => z.id === subZone)?.label}</span> (Bar 1)</span>
+                                    {hasSubZones 
+                                        ? <span>Editando: <span className="text-indigo-400">{currentZones.find(z => z.id === subZone)?.label}</span></span>
                                         : <span>Total en {locations.find(l => l.id === activeField)?.label}</span>
                                     }
                                 </div>
@@ -599,16 +619,16 @@
                                     
                                     {/* --- NUEVO: Indicador de "Agregado en esta sesión" --- */}
                                     <div className={`mt-2 px-4 py-1 rounded-full bg-[#0A0A0A] border border-[#3A4048] flex items-center gap-2 ${addedThisSession !== 0 ? 'opacity-100' : 'opacity-50'}`}>
-                                        <span className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold">Sesión:</span>
+                                        <span className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold">Sesión Total:</span>
                                         <span className={`text-xl font-bold font-mono ${addedColor}`}>
                                             {addedSign}{Math.round(addedThisSession * 10) / 10}
                                         </span>
                                     </div>
                                 </div>
                                 
-                                {isBar1 && (
+                                {hasSubZones && (
                                     <div className="mt-4 text-xs font-mono text-[#f0f6fc]/40">
-                                        Total Bar 1 (Suma): <span className="text-white font-bold">{item.bar1 || 0}</span>
+                                        Total {locations.find(l => l.id === activeField)?.label} (Suma): <span className="text-white font-bold">{item[activeField] || 0}</span>
                                     </div>
                                 )}
 
@@ -674,34 +694,59 @@
         const CountReviewModal = ({ isOpen, onClose, data }) => {
             if (!isOpen) return null;
             const [activeTab, setActiveTab] = useState('bar1');
-            const [activeSubZone, setActiveSubZone] = useState('bar1_cooler'); // Default sub-zone for Bar 1
             
+            // Define Zones Configuration (Matches QuickEditModal)
+            const zonesConfig = {
+                bar1: [
+                    { id: 'bar1_cooler', label: 'Cooler', icon: '🧊' },
+                    { id: 'bar1_small_cooler_1', label: 'Small 1', icon: '❄️' },
+                    { id: 'bar1_small_cooler_2', label: 'Small 2', icon: '❄️' },
+                    { id: 'bar1_reaching', label: 'Reaching', icon: '✋' },
+                    { id: 'bar1_shelf', label: 'Shelf', icon: '🗄️' },
+                    { id: 'bar1_well_1', label: 'Well 1', icon: '🥃' },
+                    { id: 'bar1_well_2', label: 'Well 2', icon: '🥃' },
+                ],
+                bar2: [
+                    { id: 'bar2_cooler', label: 'Cooler', icon: '🧊' },
+                    { id: 'bar2_small_cooler', label: 'Small Cooler', icon: '❄️' },
+                ],
+                bodega: [
+                    { id: 'bodega_closet', label: 'Closet', icon: '🚪' },
+                    { id: 'bodega_shelves', label: 'Shelves', icon: '🗄️' },
+                ]
+            };
+
+            const hasSubZones = zonesConfig[activeTab] !== undefined;
+            const currentZones = zonesConfig[activeTab] || [];
+            
+            // Default sub-zone: First available or null
+            const [activeSubZone, setActiveSubZone] = useState(hasSubZones ? currentZones[0].id : null);
+            
+            // Effect to reset subzone when main tab changes
+            useEffect(() => {
+                if (zonesConfig[activeTab]) {
+                    setActiveSubZone(zonesConfig[activeTab][0].id);
+                } else {
+                    setActiveSubZone(null);
+                }
+            }, [activeTab]);
+
             const locations = [
                 { id: 'bar1', label: 'Bar 1' },
                 { id: 'bar2', label: 'Bar 2' },
                 { id: 'bodega', label: 'Storage' },
                 { id: 'barroluco', label: 'Barroluco' }
             ];
-            
-            const bar1Zones = [
-                { id: 'bar1_cooler', label: 'Cooler', icon: '🧊' },
-                { id: 'bar1_small_cooler_1', label: 'Small 1', icon: '❄️' },
-                { id: 'bar1_small_cooler_2', label: 'Small 2', icon: '❄️' },
-                { id: 'bar1_reaching', label: 'Reaching', icon: '✋' },
-                { id: 'bar1_shelf', label: 'Shelf', icon: '🗄️' },
-                { id: 'bar1_well_1', label: 'Well 1', icon: '🥃' },
-                { id: 'bar1_well_2', label: 'Well 2', icon: '🥃' },
-            ];
 
-            // Group items by category for the active tab
+            // Group items by category
             const groupedItems = {};
             let totalCount = 0;
 
             // Determine which field to read from
-            // If activeTab is bar1, we read from the activeSubZone, otherwise from activeTab
-            const fieldToRead = activeTab === 'bar1' ? activeSubZone : activeTab;
-            const locationLabel = activeTab === 'bar1' 
-                ? `Bar 1 - ${bar1Zones.find(z => z.id === activeSubZone)?.label}` 
+            const fieldToRead = hasSubZones ? activeSubZone : activeTab;
+            
+            const locationLabel = hasSubZones 
+                ? `${locations.find(l => l.id === activeTab)?.label} - ${currentZones.find(z => z.id === activeSubZone)?.label}` 
                 : locations.find(l => l.id === activeTab)?.label;
 
             data.forEach(cat => {
@@ -738,10 +783,10 @@
                         ))}
                     </div>
 
-                    {/* Bar 1 Sub-Zone Tabs (Only visible when Bar 1 is active) */}
-                    {activeTab === 'bar1' && (
+                    {/* Sub-Zone Tabs (Visible only if current tab has zones) */}
+                    {hasSubZones && (
                         <div className="flex p-2 gap-2 overflow-x-auto bg-[#16181c] border-b border-[#3A4048] no-scrollbar shadow-inner">
-                            {bar1Zones.map(zone => (
+                            {currentZones.map(zone => (
                                 <button 
                                     key={zone.id} 
                                     onClick={() => setActiveSubZone(zone.id)}
@@ -1192,9 +1237,13 @@
             purchases: "", sales: "", 
             sold_bottles: "", sold_shots: "", sold_comps: "", 
             barcode: "", barcode_case: "",
-            // Bar 1 Sub-zones initialized to empty
+            // Bar 1 Sub-zones
             bar1_cooler: "", bar1_small_cooler_1: "", bar1_small_cooler_2: "", 
-            bar1_reaching: "", bar1_shelf: "", bar1_well_1: "", bar1_well_2: ""
+            bar1_reaching: "", bar1_shelf: "", bar1_well_1: "", bar1_well_2: "",
+            // Bar 2 Sub-zones
+            bar2_cooler: "", bar2_small_cooler: "",
+            // Bodega Sub-zones
+            bodega_closet: "", bodega_shelves: ""
         });
 
         const INITIAL_DATA = [
@@ -1725,7 +1774,9 @@
                                     sold_bottles: "", sold_shots: "", sold_comps: "",
                                     // Reset sub-zones for new period
                                     bar1_cooler: "", bar1_small_cooler_1: "", bar1_small_cooler_2: "", 
-                                    bar1_reaching: "", bar1_shelf: "", bar1_well_1: "", bar1_well_2: ""
+                                    bar1_reaching: "", bar1_shelf: "", bar1_well_1: "", bar1_well_2: "",
+                                    bar2_cooler: "", bar2_small_cooler: "",
+                                    bodega_closet: "", bodega_shelves: ""
                                 };
                             })
                         }));
@@ -1795,7 +1846,9 @@
                                 'bar1', 'bar2', 'bodega', 'barroluco', 
                                 'start_bar1', 'start_bar2', 'start_bodega', 'start_barroluco',
                                 'purchases', 'sales', 'sold_bottles', 'sold_shots', 'sold_comps',
-                                'bar1_cooler', 'bar1_small_cooler_1', 'bar1_small_cooler_2', 'bar1_reaching', 'bar1_shelf', 'bar1_well_1', 'bar1_well_2'
+                                'bar1_cooler', 'bar1_small_cooler_1', 'bar1_small_cooler_2', 'bar1_reaching', 'bar1_shelf', 'bar1_well_1', 'bar1_well_2',
+                                'bar2_cooler', 'bar2_small_cooler',
+                                'bodega_closet', 'bodega_shelves'
                             ];
                             
                             numericFields.forEach(field => {
