@@ -674,6 +674,7 @@
         const CountReviewModal = ({ isOpen, onClose, data }) => {
             if (!isOpen) return null;
             const [activeTab, setActiveTab] = useState('bar1');
+            const [activeSubZone, setActiveSubZone] = useState('bar1_cooler'); // Default sub-zone for Bar 1
             
             const locations = [
                 { id: 'bar1', label: 'Bar 1' },
@@ -683,34 +684,32 @@
             ];
             
             const bar1Zones = [
-                { id: 'bar1_cooler', label: 'Cooler' },
-                { id: 'bar1_small_cooler_1', label: 'Small 1' },
-                { id: 'bar1_small_cooler_2', label: 'Small 2' },
-                { id: 'bar1_reaching', label: 'Reaching' },
-                { id: 'bar1_shelf', label: 'Shelf' },
-                { id: 'bar1_well_1', label: 'Well 1' },
-                { id: 'bar1_well_2', label: 'Well 2' },
+                { id: 'bar1_cooler', label: 'Cooler', icon: '🧊' },
+                { id: 'bar1_small_cooler_1', label: 'Small 1', icon: '❄️' },
+                { id: 'bar1_small_cooler_2', label: 'Small 2', icon: '❄️' },
+                { id: 'bar1_reaching', label: 'Reaching', icon: '✋' },
+                { id: 'bar1_shelf', label: 'Shelf', icon: '🗄️' },
+                { id: 'bar1_well_1', label: 'Well 1', icon: '🥃' },
+                { id: 'bar1_well_2', label: 'Well 2', icon: '🥃' },
             ];
 
             // Group items by category for the active tab
             const groupedItems = {};
             let totalCount = 0;
 
+            // Determine which field to read from
+            // If activeTab is bar1, we read from the activeSubZone, otherwise from activeTab
+            const fieldToRead = activeTab === 'bar1' ? activeSubZone : activeTab;
+            const locationLabel = activeTab === 'bar1' 
+                ? `Bar 1 - ${bar1Zones.find(z => z.id === activeSubZone)?.label}` 
+                : locations.find(l => l.id === activeTab)?.label;
+
             data.forEach(cat => {
                 const itemsInCat = [];
                 cat.items.forEach(item => {
-                    const val = parseFloat(item[activeTab]);
+                    const val = parseFloat(item[fieldToRead]);
                     if (!isNaN(val) && val > 0) { // Show items with counts > 0
-                        // For Bar 1, create a detail string
-                        let details = null;
-                        if (activeTab === 'bar1') {
-                            const foundZones = bar1Zones.filter(z => (parseFloat(item[z.id]) || 0) > 0);
-                            if (foundZones.length > 0) {
-                                details = foundZones.map(z => `${z.label}: ${item[z.id]}`).join(' | ');
-                            }
-                        }
-                        
-                        itemsInCat.push({ ...item, val, details });
+                        itemsInCat.push({ ...item, val });
                     }
                 });
                 if (itemsInCat.length > 0) {
@@ -726,7 +725,7 @@
                         <button onClick={onClose} className="p-2 bg-[#3A4048] text-[#f0f6fc]/80 rounded-lg hover:bg-[#4A5462]">Close</button>
                     </div>
                     
-                    {/* Location Tabs */}
+                    {/* Main Location Tabs */}
                     <div className="flex p-2 gap-2 overflow-x-auto bg-[#121212] border-b border-[#3A4048] no-scrollbar">
                         {locations.map(loc => (
                             <button 
@@ -739,19 +738,38 @@
                         ))}
                     </div>
 
+                    {/* Bar 1 Sub-Zone Tabs (Only visible when Bar 1 is active) */}
+                    {activeTab === 'bar1' && (
+                        <div className="flex p-2 gap-2 overflow-x-auto bg-[#16181c] border-b border-[#3A4048] no-scrollbar shadow-inner">
+                            {bar1Zones.map(zone => (
+                                <button 
+                                    key={zone.id} 
+                                    onClick={() => setActiveSubZone(zone.id)}
+                                    className={`px-3 py-1.5 rounded-md text-[10px] uppercase font-bold whitespace-nowrap transition-all flex items-center gap-1 ${activeSubZone === zone.id ? 'bg-indigo-500 text-white shadow-md' : 'bg-[#25282e] text-[#f0f6fc]/50 hover:bg-[#3A4048] border border-transparent'}`}
+                                >
+                                    <span>{zone.icon}</span> {zone.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     <div className="flex-1 overflow-y-auto p-4 bg-[#0A0A0A]">
                         {totalCount === 0 ? (
                             <div className="text-center text-[#f0f6fc]/50 mt-20 flex flex-col items-center">
                                 <Icons.List size={48} className="mb-4 opacity-20" />
-                                <p className="text-lg">No counted items in {locations.find(l => l.id === activeTab)?.label} yet.</p>
+                                <p className="text-lg">No counted items in {locationLabel} yet.</p>
                                 <p className="text-sm mt-2 opacity-50">Enter counts in the main inventory list to see them here.</p>
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                <div className="text-xs text-[#f0f6fc]/40 uppercase font-bold tracking-widest px-1">Total Items found: {totalCount}</div>
+                                <div className="flex justify-between items-center px-1 border-b border-[#3A4048] pb-2">
+                                    <div className="text-xs text-[#f0f6fc]/40 uppercase font-bold tracking-widest">Zone: <span className="text-white">{locationLabel}</span></div>
+                                    <div className="text-xs text-[#f0f6fc]/40 uppercase font-bold tracking-widest">Items: {totalCount}</div>
+                                </div>
+                                
                                 {Object.entries(groupedItems).map(([categoryName, items]) => (
                                     <div key={categoryName} className="space-y-2">
-                                        <h3 className="text-indigo-400 font-bold text-xs uppercase tracking-wider px-1 flex items-center gap-2 border-b border-[#3A4048] pb-1 mb-2">
+                                        <h3 className="text-indigo-400 font-bold text-xs uppercase tracking-wider px-1 flex items-center gap-2 mb-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
                                             {categoryName}
                                         </h3>
@@ -760,12 +778,9 @@
                                                 <div key={item.id} className="bg-[#1D1F23] p-3 rounded-xl border border-[#3A4048] flex justify-between items-center shadow-sm hover:border-[#4A5462] transition-colors">
                                                     <div className="flex-1">
                                                         <h4 className="font-bold text-white text-base">{item.name}</h4>
-                                                        {item.details && (
-                                                            <div className="text-[10px] text-[#f0f6fc]/50 mt-1 font-mono">{item.details}</div>
-                                                        )}
                                                     </div>
                                                     <div className="text-right bg-blue-900/20 px-4 py-1 rounded-lg border border-blue-500/30 min-w-[80px]">
-                                                        <div className="text-[9px] text-blue-400 uppercase font-bold">Total</div>
+                                                        <div className="text-[9px] text-blue-400 uppercase font-bold">Count</div>
                                                         <div className="text-2xl font-black text-white">{item.val}</div>
                                                     </div>
                                                 </div>
