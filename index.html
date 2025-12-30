@@ -134,7 +134,7 @@
         // ==========================================
         // ℹ️ VERSIÓN DE LA APP
         // ==========================================
-        const APP_VERSION = "3.2";
+        const APP_VERSION = "3.4";
 
         // ==========================================
         // 🔑 CONFIGURACIÓN FIREBASE
@@ -1030,8 +1030,9 @@
                 <header className="bg-[#1D1F23]/90 border-b border-[#3A4048] text-white p-4 shadow-xl backdrop-blur-sm sticky top-0 z-50">
                     <div className="max-w-6xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-3 w-full lg:w-auto">
-                            <div className="bg-[#3A4048] p-1 rounded-full border border-[#4A5462] shadow-lg overflow-hidden h-21 w-21 flex-shrink-0 cursor-pointer hover:border-indigo-500 transition-all relative group" onClick={() => document.getElementById('logo-upload').click()} title="Click to change logo">
-                                <img src={logoSrc} alt="Logo" className="h-full w-full object-cover rounded-full" onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x100/4f46e5/ffffff?text=LOGO"; }} />
+                            {/* Logo container: Removed padding (p-1) so image fills the circle completely */}
+                            <div className="bg-[#3A4048] rounded-full border border-[#4A5462] shadow-lg overflow-hidden h-21 w-21 flex-shrink-0 cursor-pointer hover:border-indigo-500 transition-all relative group" onClick={() => document.getElementById('logo-upload').click()} title="Click to change logo">
+                                <img src={logoSrc} alt="Logo" className="h-full w-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x100/4f46e5/ffffff?text=LOGO"; }} />
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full"><Icons.Upload size={16} className="text-white" /></div>
                             </div>
                             <input type="file" id="logo-upload" accept="image/*" className="hidden" onChange={onLogoUpload} />
@@ -1071,8 +1072,8 @@
                                     <Icons.Search size={22} />
                                 </button>
 
-                                {/* 3. SHOP BUTTON */}
-                                <button onClick={onShopping} className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-amber-900/30 active:scale-95 text-sm border border-amber-400"><Icons.ShoppingCart size={20} /> SHOP</button>
+                                {/* 3. COUNT BUTTON (Moved here, replaced SHOP) */}
+                                <button onClick={onShowCount} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 active:scale-95 text-sm border border-emerald-400"><Icons.List size={20} /> COUNT</button>
 
                                 {/* 4. SETTINGS MENU BUTTON */}
                                 <button 
@@ -1099,12 +1100,13 @@
                                             </div>
                                         )}
 
-                                        <button onClick={() => { onShowCharts(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left">
-                                            <Icons.BarChart size={20} className="text-indigo-400" /> Performance Analytics
+                                        {/* SHOP BUTTON (Moved inside menu) */}
+                                        <button onClick={() => { onShopping(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left">
+                                            <Icons.ShoppingCart size={20} className="text-amber-400" /> Shopping List
                                         </button>
 
-                                        <button onClick={() => { onShowCount(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left">
-                                            <Icons.List size={20} className="text-blue-400" /> Count Double Check
+                                        <button onClick={() => { onShowCharts(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left">
+                                            <Icons.BarChart size={20} className="text-indigo-400" /> Performance Analytics
                                         </button>
 
                                         <button onClick={() => { onDownloadPDF(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left">
