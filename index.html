@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Bar Control v3.7</title>
+    <title>Master Bar Control v3.8</title>
     
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -102,7 +102,7 @@
 <body>
     <div id="root">
         <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: rgba(240, 246, 252, 0.5); flex-direction: column; gap: 1rem;">
-            <div class="animate-pulse">Loading Master Bar Control v3.7...</div>
+            <div class="animate-pulse">Loading Master Bar Control v3.8...</div>
         </div>
     </div>
     
@@ -145,7 +145,7 @@
             }
         };
 
-        const APP_VERSION = "3.7";
+        const APP_VERSION = "3.8";
         const BUILD_ID = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
         const FIREBASE_CONFIG = {
@@ -659,7 +659,68 @@
             );
         };
 
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, logoSrc, onLogoUpload, onShowCount, isSaving, onToggleSearch, showSearch, onToggleZoneSelector, showZoneSelector }) => {
+        const PurchasesLogModal = ({ isOpen, onClose, data }) => {
+            if (!isOpen) return null;
+            
+            const purchasedItems = [];
+            let totalPurchasedUnits = 0;
+
+            data.forEach(cat => {
+                cat.items.forEach(item => {
+                    const val = parseFloat(item.purchases);
+                    if (!isNaN(val) && val > 0) {
+                        purchasedItems.push({
+                            ...item,
+                            categoryName: cat.category,
+                            purchaseVal: val
+                        });
+                        totalPurchasedUnits += val;
+                    }
+                });
+            });
+
+            return (
+                <div className="fixed inset-0 bg-black/90 flex flex-col z-[80] backdrop-blur-sm animate-in overflow-hidden">
+                    <div className="p-4 border-b border-[#3A4048] flex justify-between items-center bg-[#1D1F23]">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Icons.Package className="text-emerald-400" /> Purchases Log
+                        </h2>
+                        <button onClick={onClose} className="p-2 bg-[#3A4048] text-[#f0f6fc]/80 rounded-lg hover:bg-[#4A5462]">Close</button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4">
+                        {purchasedItems.length === 0 ? (
+                            <div className="text-center text-[#f0f6fc]/50 mt-20">
+                                <p className="text-lg">No purchases recorded this period.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="bg-[#1D1F23] p-4 rounded-xl border border-[#3A4048]">
+                                    <div className="text-xs text-[#f0f6fc]/50 uppercase font-bold tracking-wider">Total Added Units</div>
+                                    <div className="text-3xl font-black text-emerald-400">{totalPurchasedUnits}</div>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    {purchasedItems.map((item, idx) => (
+                                        <div key={idx} className="bg-[#1D1F23] p-3 rounded-lg border border-[#3A4048] flex justify-between items-center">
+                                            <div>
+                                                <div className="font-bold text-white">{item.name}</div>
+                                                <div className="text-[10px] text-[#f0f6fc]/50">{item.categoryName}</div>
+                                            </div>
+                                            <div className="text-emerald-400 font-mono font-bold text-lg">
+                                                +{item.purchaseVal}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, onShowPurchasesLog, logoSrc, onLogoUpload, onShowCount, isSaving, onToggleSearch, showSearch, onToggleZoneSelector, showZoneSelector }) => {
             const [showMenu, setShowMenu] = useState(false);
             const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
             return (
@@ -696,7 +757,6 @@
                                     <div className="absolute top-full right-0 mt-4 w-72 bg-[#1D1F23] border border-[#3A4048] rounded-3xl shadow-2xl z-50 p-3 flex flex-col gap-2 animate-in origin-top-right">
                                         <div className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold tracking-widest px-3 py-2 border-b border-[#3A4048]/50 mb-1">Menu & Tools</div>
                                         
-                                        {/* BOTONES BACKUP/LOAD VISIBLES SIEMPRE */}
                                         <div className="flex gap-2 p-1">
                                             <button onClick={() => { onBackup(); setShowMenu(false); }} className="flex-1 flex items-center justify-center gap-2 bg-[#0A0A0A] hover:bg-[#3A4048] text-[#f0f6fc]/80 p-3 rounded-xl text-xs font-bold border border-[#3A4048] transition-all">
                                                 <Icons.Save size={14} /> Backup
@@ -705,6 +765,10 @@
                                                 <Icons.Upload size={14} /> Load
                                             </button>
                                         </div>
+
+                                        <button onClick={() => { onShowPurchasesLog(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left">
+                                            <Icons.Package size={20} className="text-emerald-400" /> View Purchases Log
+                                        </button>
 
                                         <button onClick={() => { onShopping(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.ShoppingCart size={20} className="text-amber-400" /> Shopping List</button>
                                         <button onClick={() => { onShowCharts(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.BarChart size={20} className="text-indigo-400" /> Performance Analytics</button>
@@ -808,6 +872,7 @@
             const [modalConfig, setModalConfig] = useState(null);
             const [showCharts, setShowCharts] = useState(false);
             const [showShopping, setShowShopping] = useState(false);
+            const [showPurchasesLog, setShowPurchasesLog] = useState(false);
             const [shoppingItems, setShoppingItems] = useState([]);
             const [isScanning, setIsScanning] = useState(false);
             const [pendingBarcode, setPendingBarcode] = useState(null);
@@ -1121,7 +1186,7 @@
             return (
                 <div className="min-h-screen bg-transparent font-sans pb-20">
                     <div className="sticky top-0 left-0 right-0 z-50 shadow-xl bg-[#1D1F23]/90 backdrop-blur-md">
-                        <Header onNewPeriod={confirmNewPeriod} onClearAll={confirmClearAll} onDownload={downloadReport} onDownloadPDF={generatePDF} onShowCharts={() => setShowCharts(true)} onBackup={handleBackup} onRestore={() => fileInputRef.current.click()} isCloud={isCloud} onShopping={generateShoppingList} logoSrc={logo} onLogoUpload={handleLogoChange} onAddProduct={() => setShowAddProduct(true)} onShowCount={() => setShowCountReview(true)} isSaving={isSaving} onToggleSearch={() => setShowSearch(!showSearch)} showSearch={showSearch} onToggleZoneSelector={() => setShowZoneSelector(!showZoneSelector)} showZoneSelector={showZoneSelector} />
+                        <Header onNewPeriod={confirmNewPeriod} onClearAll={confirmClearAll} onDownload={downloadReport} onDownloadPDF={generatePDF} onShowCharts={() => setShowCharts(true)} onBackup={handleBackup} onRestore={() => fileInputRef.current.click()} isCloud={isCloud} onShopping={generateShoppingList} onShowPurchasesLog={() => setShowPurchasesLog(true)} logoSrc={logo} onLogoUpload={handleLogoChange} onAddProduct={() => setShowAddProduct(true)} onShowCount={() => setShowCountReview(true)} isSaving={isSaving} onToggleSearch={() => setShowSearch(!showSearch)} showSearch={showSearch} onToggleZoneSelector={() => setShowZoneSelector(!showZoneSelector)} showZoneSelector={showZoneSelector} />
                         {showZoneSelector && (
                             <div className="bg-[#121212]/95 border-b border-[#3A4048] p-3 animate-in">
                                 <div className="max-w-[360px] mx-auto bg-[#1D1F23] rounded-xl border border-[#3A4048] p-2 shadow-lg">
@@ -1145,6 +1210,7 @@
                     <AddProductModal isOpen={showAddProduct} onClose={() => setShowAddProduct(false)} onAdd={handleAddNewProduct} categories={data.map(c => c.category)} />
                     {showCharts && <ChartsView data={data} onClose={() => setShowCharts(false)} />}
                     {showShopping && <ShoppingListModal isOpen={showShopping} onClose={() => setShowShopping(false)} items={shoppingItems} />}
+                    {showPurchasesLog && <PurchasesLogModal isOpen={showPurchasesLog} onClose={() => setShowPurchasesLog(false)} data={data} />}
                     {showCountReview && <CountReviewModal isOpen={showCountReview} onClose={() => setShowCountReview(false)} data={data} onUpdate={updateItem} />}
                     {isScanning && !isResetting && (<ScannerModal key={scanAttempt} onScanSuccess={handleScanSuccess} onClose={() => { setIsScanning(false); setScanningForItem(null); }} />)}
                     {quickScanItemId && activeQuickItem && (<QuickEditModal item={activeQuickItem} onClose={() => { setQuickScanItemId(null); setIsScanning(true); setScanAttempt(0); }} onUpdate={updateItem} initialLocation={currentLocation}/>)}
