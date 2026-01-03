@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Bar Control v3.8</title>
+    <title>Master Bar Control v4.2</title>
     
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -102,32 +102,20 @@
 <body>
     <div id="root">
         <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: rgba(240, 246, 252, 0.5); flex-direction: column; gap: 1rem;">
-            <div class="animate-pulse">Loading Master Bar Control v3.8...</div>
+            <div class="animate-pulse">Loading Master Bar Control v4.2...</div>
         </div>
     </div>
     
     <!-- Hidden Canvas for generating chart images for PDF -->
     <canvas id="pdf-chart-canvas" width="800" height="600"></canvas>
 
-    <!-- FIREBASE MODULES - Loaded safely -->
+    <!-- FIREBASE MODULES -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         
-        window.fb = { 
-            initializeApp, 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            onSnapshot, 
-            getDoc, 
-            getAuth, 
-            signInAnonymously, 
-            onAuthStateChanged,
-            signInWithCustomToken,
-            collection
-        };
+        window.fb = { initializeApp, getFirestore, doc, setDoc, onSnapshot, getDoc, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, collection };
     </script>
 
     <script type="text/babel">
@@ -137,45 +125,52 @@
         // 🛠️ SAFE STORAGE HELPER
         // ==========================================
         const SafeStorage = {
-            getItem: (key) => {
-                try { return localStorage.getItem(key); } catch (e) { console.warn("Storage access denied"); return null; }
-            },
-            setItem: (key, value) => {
-                try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage write denied"); }
-            }
+            getItem: (key) => { try { return localStorage.getItem(key); } catch (e) { console.warn("Storage access denied"); return null; } },
+            setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage write denied"); } }
         };
 
-        const APP_VERSION = "3.8";
+        const APP_VERSION = "4.2";
         const BUILD_ID = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
-        const FIREBASE_CONFIG = {
-            apiKey: "", 
-            authDomain: "",
-            projectId: "",
-            storageBucket: "",
-            messagingSenderId: "",
-            appId: ""
-        };
-        
+        const FIREBASE_CONFIG = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
         const ENV_APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const ENV_FIREBASE_CONFIG = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const ENV_AUTH_TOKEN = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+        // --- RECIPES ---
+        // Single Cocktails
+        const COCKTAIL_RECIPES = [
+            { name: "Sex on the Beach", ingredients: [{ name: "Barton Naturals Vodka", qty: 1 }, { name: "Peach Schnapps Boston", qty: 1 }] },
+            { name: "Green Tea Shot", ingredients: [{ name: "Jameson", qty: 0.5 }, { name: "Peach Schnapps Boston", qty: 0.5 }] },
+            { name: "Tequila Sunrise", ingredients: [{ name: "Montezuma White", qty: 1 }] },
+            { name: "Caribbean Drop", ingredients: [{ name: "Bacardi Limon", qty: 1 }] },
+            { name: "Margarita", ingredients: [{ name: "Montezuma White", qty: 1 }] },
+            { name: "Strawberry Margarita", ingredients: [{ name: "Montezuma White", qty: 1 }] },
+            { name: "Moscow Mule", ingredients: [{ name: "Barton Naturals Vodka", qty: 1 }] },
+            { name: "Mojito", ingredients: [{ name: "Bacardi Light", qty: 1 }] },
+            { name: "Amaretto Sour", ingredients: [{ name: "Disaronno Amaretto", qty: 2 }] },
+            { name: "Blue MF", ingredients: [{ name: "Long Island Tea Mix", qty: 2 }, { name: "Curacao Blue", qty: 0.5 }] },
+            { name: "Long Island Ice Tea", ingredients: [{ name: "Long Island Tea Mix", qty: 2 }, { name: "Triple Sec Boston", qty: 0.5 }] },
+            { name: "Screwdriver", ingredients: [{ name: "Barton Naturals Vodka", qty: 1 }] }
+        ];
+
+        // Pitchers
+        const PITCHER_RECIPES = [
+            { name: "Sex on the Beach PITCHER", ingredients: [{ name: "Montezuma White", qty: 10 }, { name: "Peach Schnapps Boston", qty: 10 }] }, 
+            { name: "Margarita PITCHER", ingredients: [{ name: "Montezuma White", qty: 10 }] },
+            { name: "Tequila Sunrise PITCHER", ingredients: [{ name: "Montezuma White", qty: 10 }] },
+            { name: "Blue MF PITCHER", ingredients: [{ name: "Long Island Tea Mix", qty: 10 }, { name: "Curacao Blue", qty: 2.5 }] },
+            { name: "Long Island PITCHER", ingredients: [{ name: "Long Island Tea Mix", qty: 10 }, { name: "Triple Sec Boston", qty: 2.5 }] }
+        ];
+
         const PAR_LEVELS = {
-            // Liquor
             "Crown Royal Regal": 2, "Apple Crown Royal": 2, "Jack Daniels Black": 4, "Jameson": 2, "WoodFord Reserve": 1,
             "Buchanans 12": 6, "Johnnie Walker Black": 4, "Grand Old Parr 12": 2, "Hennessy VS": 3, "Tito's Texas Vodka": 3,
             "Remy Martin": 1, "Grey Goose": 3, "Casamigos Blanco": 4, "Casamigos Reposado": 2, "Espolon Blanco": 2,
             "Espolon Reposado": 1, "Don Julio Blanco": 6, "Don Julio Reposado": 2, "Patron Silver": 6, "Patron Reposado": 1,
             "Fernet Branca": 2, "Brugal Anejo": 1, "Montezuma White": 12, "Barton Naturals Vodka": 12, "Long Island Tea Mix": 6,
-            "Peach Schnapps Boston": 12, "Triple Sec Boston": 12, "Bacardi Light": 6,
-            // Beers
-            "Modelo Especial": 600, "Corona": 720, "Michelob Ultra": 96, "Heineken": 48, "Pacifico": 72,
-            // Energy & Seltzer
-            "Red Bull Regular": 96, "Red Bull Sugar Free": 96, "Red Bull Watermelon": 72,
-            // Wines
-            "Cafayate Malbec": 6,
-            // Non Alcoholic
+            "Peach Schnapps Boston": 12, "Triple Sec Boston": 12, "Bacardi Light": 6, "Modelo Especial": 600, "Corona": 720, "Michelob Ultra": 96, "Heineken": 48, "Pacifico": 72,
+            "Red Bull Regular": 96, "Red Bull Sugar Free": 96, "Red Bull Watermelon": 72, "Cafayate Malbec": 6,
             "Coca Cola": 48, "Diet Coke": 24, "Sprite": 48, "Ginger Ale": 24, "Water Bottle": 96
         };
 
@@ -189,9 +184,7 @@
         }
 
         // --- ICONS ---
-        const IconWrapper = ({ children, className, size = 24 }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
-        );
+        const IconWrapper = ({ children, className, size = 24 }) => (<svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>);
         const Icons = {
             Beer: (p) => <IconWrapper {...p}><path d="M17 11h1a3 3 0 0 1 0 6h-1"/><path d="M9 12h6"/><path d="M9 12v3a8 8 0 0 1-16 0v-3"/><path d="M22 6h-7a2 2 0 0 0-2 2v2"/><path d="M5 12V3a2 2 0 0 1 2-2h7"/></IconWrapper>,
             Wine: (p) => <IconWrapper {...p}><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></IconWrapper>,
@@ -226,7 +219,9 @@
             FileText: (p) => <IconWrapper {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></IconWrapper>,
             GitMerge: (p) => <IconWrapper {...p}><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></IconWrapper>,
             Clock: (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconWrapper>,
-            Settings: (p) => <IconWrapper {...p}><path d="M12.22 2h-.44a2 2 0 0 1-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></IconWrapper>
+            Settings: (p) => <IconWrapper {...p}><path d="M12.22 2h-.44a2 2 0 0 1-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></IconWrapper>,
+            Cocktail: (p) => <IconWrapper {...p}><path d="M8 21h8"/><path d="M12 21v-7"/><path d="M6 4h12a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></IconWrapper>,
+            Pitcher: (p) => <IconWrapper {...p}><path d="M16 2v2h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-4"/><path d="M10 2v2"/><path d="M7 2h10a2 2 0 0 1 2 2v14a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V4a2 2 0 0 1 2-2Z"/></IconWrapper>
         };
 
         // --- AUDIO HELPER ---
@@ -237,31 +232,66 @@
                 const ctx = new AudioContext();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                
-                const now = ctx.currentTime;
-
+                osc.connect(gain); gain.connect(ctx.destination); const now = ctx.currentTime;
                 switch (type) {
-                    case 'success':
-                        osc.type = "sine"; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                        break;
-                    case 'error':
-                        osc.type = "square"; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(100, now + 0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                        break;
-                    case 'add':
-                        osc.type = "sine"; osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1000, now + 0.1); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                        break;
-                    case 'sub':
-                        osc.type = "triangle"; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(300, now + 0.1); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                        break;
+                    case 'success': osc.type = "sine"; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); break;
+                    case 'error': osc.type = "square"; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(100, now + 0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); break;
+                    case 'add': osc.type = "sine"; osc.frequency.setValueAtTime(800, now); osc.frequency.linearRampToValueAtTime(1000, now + 0.1); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); break;
+                    case 'sub': osc.type = "triangle"; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(300, now + 0.1); gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); break;
                 }
                 osc.start(now); osc.stop(now + 0.2);
             } catch (e) { console.error("Audio play failed", e); }
         };
 
         // --- COMPONENTS ---
+        
+        const CategoryHeader = ({ title, icon: Icon, isOpen, toggle }) => (
+            <button onClick={toggle} className="w-full flex items-center justify-between p-4 bg-[#1D1F23] border border-[#3A4048] hover:bg-[#1D1F23]/80 rounded-xl shadow-lg mb-2 transition-all group"><div className="flex items-center gap-3"><div className="text-indigo-400 group-hover:text-indigo-300 transition-colors"><Icon size={20} /></div><h2 className="font-bold text-white text-lg group-hover:text-white transition-colors">{title}</h2></div>{isOpen ? <Icons.ChevronUp className="text-[#f0f6fc]/50" /> : <Icons.ChevronDown className="text-[#f0f6fc]/50" />}</button>
+        );
+
+        const InputField = ({ label, value, onChange, colorClass = "border-[#30363d]", icon: Icon }) => (
+            <div className="relative group"><label className="block text-[10px] text-[#f0f6fc]/60 font-bold uppercase mb-1 flex items-center gap-1 group-hover:text-indigo-400 transition-colors">{Icon && <Icon size={10} />} {label}</label><input type="number" step="0.1" placeholder="-" value={value} onChange={(e) => onChange(e.target.value)} className={`w-full bg-[#0A0A0A] border rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all ${colorClass} ${value !== "" && value !== 0 ? 'text-indigo-300 font-bold border-indigo-500/50 bg-indigo-900/20' : 'text-[#f0f6fc]/50'}`} /></div>
+        );
+
+        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, categoryName, onScanRequest, onDelete }) => {
+            const [isExpanded, setIsExpanded] = useState(false);
+            const isUnitBased = categoryName.includes("Beers") || categoryName.includes("Seltzer") || categoryName.includes("Non Alcoholic");
+            const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
+            const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
+            const purchases = parseFloat(item.purchases) || 0; const sales = parseFloat(item.sales) || 0;
+            const systemConsumption = totalStart + purchases - totalPhys; const diff = sales - systemConsumption;
+            const hasPhysical = item.bar1 || item.bar2 || item.bodega || item.barroluco; const hasStart = item.start_bar1 || item.start_bar2 || item.start_bodega || item.start_barroluco;
+            const bottleSizeOz = isWells ? 33.814 : 25.36; const shotsPerBottle = bottleSizeOz / 1.2; 
+            const handleSalesChange = (type, val) => {
+                let newBottles = type === 'bottles' ? val : (item.sold_bottles || ""); let newShots = type === 'shots' ? val : (item.sold_shots || ""); let newComps = type === 'comps' ? val : (item.sold_comps || "");
+                const b = parseFloat(newBottles) || 0; const s = parseFloat(newShots) || 0; const c = parseFloat(newComps) || 0;
+                let totalSales = 0; if (isUnitBased) totalSales = b + (s * 6) + c; else totalSales = b + ((s * 1.2) / bottleSizeOz) + c;
+                onUpdate(item.id, { sold_bottles: newBottles, sold_shots: newShots, sold_comps: newComps, sales: totalSales > 0 ? totalSales.toFixed(2) : "" });
+            };
+            let statusColor = "bg-[#1D1F23] border-[#3A4048]"; let badgeClass = "text-[#f0f6fc]/60 bg-[#0A0A0A] border border-[#3A4048]";
+            if (hasPhysical && hasStart) { if (diff < -0.1) { statusColor = "bg-[#1D1F23] border-red-500/50 shadow-[inset_4px_0_0_0_#ef4444]"; badgeClass = "text-red-400 bg-red-900/20 border border-red-500/30"; } else if (diff > 0.1) { statusColor = "bg-[#1D1F23] border-blue-500/50 shadow-[inset_4px_0_0_0_#3b82f6]"; badgeClass = "text-blue-400 bg-blue-900/20 border border-blue-500/30"; } else { statusColor = "bg-[#1D1F23] border-emerald-500/50 shadow-[inset_4px_0_0_0_#10b981]"; badgeClass = "text-emerald-400 bg-emerald-900/20 border border-emerald-500/30"; } }
+
+            return (
+                <div className={`rounded-xl border shadow-lg transition-all duration-300 overflow-hidden ${statusColor} mb-3 relative z-10`}>
+                    <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-[#1D1F23]/80 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
+                        <div className="flex-1"><div className="flex items-center gap-2"><span className="font-bold text-white text-base">{item.name}</span>{(item.barcode || item.barcode_case) && <Icons.Barcode size={14} className="text-indigo-400" />}{(hasPhysical && hasStart) ? <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${badgeClass}`}>{diff > 0 ? "+" : ""}{diff.toFixed(1)}</span> : null}</div><div className="text-xs text-[#f0f6fc]/50 mt-1 flex gap-3 font-mono"><span>On Hand: <b className="text-white">{totalStart}</b></span><span className="text-[#f0f6fc]/40">|</span><span>Physical: <b className="text-white">{totalPhys}</b></span></div></div>
+                        <div>{isExpanded ? <Icons.ChevronUp className="text-[#f0f6fc]/50" /> : <Icons.ChevronDown className="text-[#f0f6fc]/50" />}</div>
+                    </div>
+                    {isExpanded && (
+                        <div className="p-4 border-t border-[#3A4048]/50 bg-[#0A0A0A]/50 space-y-4 animate-in">
+                            <div className="space-y-2 mb-3">
+                                <div className="flex items-center justify-between bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]"><div className="flex items-center gap-2"><Icons.Barcode className="text-[#f0f6fc]/60" size={16} /><div className="flex flex-col"><span className="text-[10px] uppercase text-[#f0f6fc]/50 font-bold">Unit Barcode (CSV)</span><span className="text-xs font-mono text-white">{item.barcode ? item.barcode.split(',')[0].trim() : "Unlinked"}</span></div></div><button onClick={() => onScanRequest(item.id, 'unit')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-lg font-bold shadow-lg shadow-indigo-900/20 active:scale-95 transition-all"><Icons.Scan size={14} /> {item.barcode ? "Change/Add" : "Link Unit"}</button></div>
+                            </div>
+                            <div className="bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]"><div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.Box size={12} /> 1. On Hand (Start)</div><div className="grid grid-cols-4 gap-2"><InputField label="Bar 1" value={item.start_bar1} onChange={(v) => onUpdate(item.id, 'start_bar1', v)} colorClass="border-[#3A4048] focus:border-amber-500" /><InputField label="Bar 2" value={item.start_bar2} onChange={(v) => onUpdate(item.id, 'start_bar2', v)} colorClass="border-[#3A4048] focus:border-amber-500" /><InputField label="Storage" value={item.start_bodega} onChange={(v) => onUpdate(item.id, 'start_bodega', v)} colorClass="border-[#3A4048] focus:border-amber-500" /><InputField label="Barroluco" value={item.start_barroluco} onChange={(v) => onUpdate(item.id, 'start_barroluco', v)} colorClass="border-[#3A4048] focus:border-amber-500" /></div></div>
+                            <div className="bg-[#1D1F23] p-3 rounded-lg border border-[#3A4048]"><div className="grid grid-cols-1 gap-3"><InputField label="2. Purchases (+)" value={item.purchases} onChange={(v) => onUpdate(item.id, 'purchases', v)} icon={Icons.ShoppingCart} colorClass="border-emerald-900/50 focus:border-emerald-500 text-emerald-300" /></div></div>
+                            <div className="bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]"><div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.MapPin size={12} /> 3. Physical Count (End)</div><div className="grid grid-cols-4 gap-2"><InputField label="Bar 1" value={item.bar1} onChange={(v) => onUpdate(item.id, 'bar1', v)} colorClass="border-[#3A4048] focus:border-indigo-500" /><InputField label="Bar 2" value={item.bar2} onChange={(v) => onUpdate(item.id, 'bar2', v)} colorClass="border-[#3A4048] focus:border-indigo-500" /><InputField label="Storage" value={item.bodega} onChange={(v) => onUpdate(item.id, 'bodega', v)} colorClass="border-[#3A4048] focus:border-indigo-500" /><InputField label="Barroluco" value={item.barroluco} onChange={(v) => onUpdate(item.id, 'barroluco', v)} colorClass="border-[#3A4048] focus:border-indigo-500" /></div></div>
+                            <div className="bg-amber-900/10 p-3 rounded-lg border border-amber-900/20"><div className="flex items-center gap-2 mb-3 text-amber-500 font-bold text-[10px] uppercase tracking-wider"><Icons.Calculator size={12} /> 4. Sales Calculator (POS)</div><div className="mb-4 bg-amber-500/5 p-3 rounded border border-amber-500/10"><div className="text-[10px] text-amber-300 mb-1 uppercase font-bold">{isUnitBased ? "Unit Calculator" : `Shot Calculator (1.2oz @ ${isWells ? '1L' : '750ml'})`}</div><div className="grid grid-cols-3 gap-3 mb-2"><div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Cans / Units" : "Bottles"}</label><input type="number" step="1" placeholder="0" value={item.sold_bottles || ""} onChange={(e) => handleSalesChange('bottles', e.target.value)} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100" /></div><div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Buckets (x6)" : "Shots"}</label><input type="number" step="1" placeholder="0" value={item.sold_shots || ""} onChange={(e) => handleSalesChange('shots', e.target.value)} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100" /></div><div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Comps (Units)" : "Comps (Bottles)"}</label><input type="number" step="1" placeholder="0" value={item.sold_comps || ""} onChange={(e) => handleSalesChange('comps', e.target.value)} className="w-full bg-[#0A0A0A] border border-emerald-700/50 rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-emerald-500 text-emerald-100" /></div></div></div><div className="grid grid-cols-1 gap-3"><InputField label="Total Sales POS (Calculated)" value={item.sales} onChange={(v) => onUpdate(item.id, 'sales', v)} icon={Icons.DollarSign} colorClass="border-blue-900/50 focus:border-blue-500 text-blue-300" /></div><div className="text-right mt-4 text-xs text-[#f0f6fc]/50 font-mono space-y-2"><div className="text-amber-500/80">Sys Sales = {totalStart} + {purchases || 0} - {totalPhys} = <b>{systemConsumption}</b></div><div className={`text-xl font-black ${diff < 0 ? 'text-red-600' : 'text-emerald-600'}`}>Diff = {diff.toFixed(2)}</div></div></div>
+                            <div className="flex justify-between items-center pt-4 border-t border-[#3A4048]/50 mt-2"><div className="text-[9px] text-[#f0f6fc]/30 font-mono">ID: {item.id}</div><button onClick={(e) => { e.stopPropagation(); onDelete(item); }} className="flex items-center gap-2 bg-red-900/10 hover:bg-red-900/30 text-red-500 hover:text-red-400 border border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"><Icons.Trash size={14} /> Delete</button></div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
         
         const LoginScreen = ({ onLogin, logoSrc, onLogoUpload }) => {
             const [pin, setPin] = useState("");
@@ -661,66 +691,198 @@
 
         const PurchasesLogModal = ({ isOpen, onClose, data }) => {
             if (!isOpen) return null;
-            
-            const purchasedItems = [];
-            let totalPurchasedUnits = 0;
-
-            data.forEach(cat => {
-                cat.items.forEach(item => {
-                    const val = parseFloat(item.purchases);
-                    if (!isNaN(val) && val > 0) {
-                        purchasedItems.push({
-                            ...item,
-                            categoryName: cat.category,
-                            purchaseVal: val
-                        });
-                        totalPurchasedUnits += val;
-                    }
-                });
-            });
-
+            const purchasedItems = []; let totalPurchasedUnits = 0;
+            data.forEach(cat => { cat.items.forEach(item => { const val = parseFloat(item.purchases); if (!isNaN(val) && val > 0) { purchasedItems.push({ ...item, categoryName: cat.category, purchaseVal: val }); totalPurchasedUnits += val; } }); });
             return (
                 <div className="fixed inset-0 bg-black/90 flex flex-col z-[80] backdrop-blur-sm animate-in overflow-hidden">
                     <div className="p-4 border-b border-[#3A4048] flex justify-between items-center bg-[#1D1F23]">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <Icons.Package className="text-emerald-400" /> Purchases Log
-                        </h2>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icons.Package className="text-emerald-400" /> Purchases Log</h2>
                         <button onClick={onClose} className="p-2 bg-[#3A4048] text-[#f0f6fc]/80 rounded-lg hover:bg-[#4A5462]">Close</button>
                     </div>
-                    
                     <div className="flex-1 overflow-y-auto p-4">
-                        {purchasedItems.length === 0 ? (
-                            <div className="text-center text-[#f0f6fc]/50 mt-20">
-                                <p className="text-lg">No purchases recorded this period.</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="bg-[#1D1F23] p-4 rounded-xl border border-[#3A4048]">
-                                    <div className="text-xs text-[#f0f6fc]/50 uppercase font-bold tracking-wider">Total Added Units</div>
-                                    <div className="text-3xl font-black text-emerald-400">{totalPurchasedUnits}</div>
-                                </div>
+                        {purchasedItems.length === 0 ? <div className="text-center text-[#f0f6fc]/50 mt-20"><p className="text-lg">No purchases recorded this period.</p></div> : <div className="space-y-4"><div className="bg-[#1D1F23] p-4 rounded-xl border border-[#3A4048]"><div className="text-xs text-[#f0f6fc]/50 uppercase font-bold tracking-wider">Total Added Units</div><div className="text-3xl font-black text-emerald-400">{totalPurchasedUnits}</div></div><div className="grid gap-2">{purchasedItems.map((item, idx) => (<div key={idx} className="bg-[#1D1F23] p-3 rounded-lg border border-[#3A4048] flex justify-between items-center"><div><div className="font-bold text-white">{item.name}</div><div className="text-[10px] text-[#f0f6fc]/50">{item.categoryName}</div></div><div className="text-emerald-400 font-mono font-bold text-lg">+{item.purchaseVal}</div></div>))}</div></div>}
+                    </div>
+                </div>
+            );
+        };
+        
+        const SalesEntryModal = ({ isOpen, onClose, data, onUpdate, onBatchUpdate }) => {
+            if (!isOpen) return null;
+            const [searchTerm, setSearchTerm] = useState("");
+            const [activeTab, setActiveTab] = useState('products'); 
+            
+            const filteredData = useMemo(() => {
+                if (!searchTerm) return data;
+                const lowerTerm = searchTerm.toLowerCase();
+                return data.map(cat => ({ ...cat, items: cat.items.filter(item => item.name.toLowerCase().includes(lowerTerm)) })).filter(cat => cat.items.length > 0);
+            }, [data, searchTerm]);
 
-                                <div className="grid gap-2">
-                                    {purchasedItems.map((item, idx) => (
-                                        <div key={idx} className="bg-[#1D1F23] p-3 rounded-lg border border-[#3A4048] flex justify-between items-center">
-                                            <div>
-                                                <div className="font-bold text-white">{item.name}</div>
-                                                <div className="text-[10px] text-[#f0f6fc]/50">{item.categoryName}</div>
-                                            </div>
-                                            <div className="text-emerald-400 font-mono font-bold text-lg">
-                                                +{item.purchaseVal}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+            const filteredCocktails = useMemo(() => {
+                if (!searchTerm) return COCKTAIL_RECIPES;
+                const lowerTerm = searchTerm.toLowerCase();
+                return COCKTAIL_RECIPES.filter(c => c.name.toLowerCase().includes(lowerTerm));
+            }, [searchTerm]);
+
+            const filteredPitchers = useMemo(() => {
+                if (!searchTerm) return PITCHER_RECIPES;
+                const lowerTerm = searchTerm.toLowerCase();
+                return PITCHER_RECIPES.filter(c => c.name.toLowerCase().includes(lowerTerm));
+            }, [searchTerm]);
+
+            const handleLocalSalesChange = (item, type, val, categoryName) => {
+                let newBottles = type === 'bottles' ? val : (item.sold_bottles || ""); 
+                let newShots = type === 'shots' ? val : (item.sold_shots || ""); 
+                let newComps = type === 'comps' ? val : (item.sold_comps || "");
+                const b = parseFloat(newBottles) || 0; const s = parseFloat(newShots) || 0; const c = parseFloat(newComps) || 0;
+                const isUnitBased = categoryName.includes("Beers") || categoryName.includes("Seltzer") || categoryName.includes("Non Alcoholic");
+                const isWells = categoryName.includes("Wells");
+                const bottleSizeOz = isWells ? 33.814 : 25.36;
+                let totalSales = 0; if (isUnitBased) totalSales = b + (s * 6) + c; else totalSales = b + ((s * 1.2) / bottleSizeOz) + c;
+                onUpdate(item.id, { sold_bottles: newBottles, sold_shots: newShots, sold_comps: newComps, sales: totalSales > 0 ? totalSales.toFixed(2) : "" });
+            };
+
+            const [recipeQuantities, setRecipeQuantities] = useState({});
+
+            const handleRecipeQtyChange = (name, val) => {
+                setRecipeQuantities(prev => ({...prev, [name]: val}));
+            };
+
+            const handleAddRecipe = (recipe) => {
+                const qtyToAdd = parseInt(recipeQuantities[recipe.name] || 1);
+                if (qtyToAdd <= 0) return;
+
+                const updates = [];
+                let foundAny = false;
+
+                recipe.ingredients.forEach(ing => {
+                    for (const cat of data) {
+                        const item = cat.items.find(i => i.name === ing.name);
+                        if (item) {
+                            foundAny = true;
+                            // Add quantities
+                            const currentShots = parseFloat(item.sold_shots) || 0;
+                            const addedShots = ing.qty * qtyToAdd;
+                            const newShots = currentShots + addedShots;
+                            
+                            // Re-calc Sales
+                            const isWells = cat.category.includes("Wells");
+                            const bottleSizeOz = isWells ? 33.814 : 25.36;
+                            const b = parseFloat(item.sold_bottles) || 0;
+                            const c = parseFloat(item.sold_comps) || 0;
+                            const totalSales = b + ((newShots * 1.2) / bottleSizeOz) + c;
+
+                            // Check if this item is already in updates array
+                            const existingUpdateIndex = updates.findIndex(u => u.id === item.id);
+                            if (existingUpdateIndex >= 0) {
+                                // Add to existing update if same ingredient used multiple times (rare)
+                                updates[existingUpdateIndex].changes.sold_shots += addedShots;
+                                // Recalc sales based on new total
+                                const combinedShots = updates[existingUpdateIndex].changes.sold_shots;
+                                const combinedSales = b + ((combinedShots * 1.2) / bottleSizeOz) + c;
+                                updates[existingUpdateIndex].changes.sales = combinedSales > 0 ? combinedSales.toFixed(2) : "";
+                            } else {
+                                updates.push({
+                                    id: item.id,
+                                    changes: { sold_shots: newShots, sales: totalSales > 0 ? totalSales.toFixed(2) : "" }
+                                });
+                            }
+                            break; 
+                        }
+                    }
+                });
+                
+                if (updates.length > 0) {
+                    onBatchUpdate(updates);
+                    // Reset input
+                    setRecipeQuantities(prev => ({...prev, [recipe.name]: ""}));
+                }
+            };
+
+            // Render Helper for Cocktails/Pitchers
+            const renderRecipeList = (list) => (
+                <div className="grid gap-3">
+                    {list.map((recipe, idx) => (
+                        <div key={idx} className="bg-[#1D1F23] p-4 rounded-xl border border-[#3A4048] shadow-lg flex justify-between items-center">
+                            <div className="flex-1 mr-4">
+                                <h3 className="font-bold text-white text-base">{recipe.name}</h3>
+                                <div className="text-xs text-[#f0f6fc]/50 mt-1">{recipe.ingredients.map(ing => `${ing.qty} ${ing.name}`).join(', ')}</div>
                             </div>
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="number" 
+                                    min="1"
+                                    placeholder="1" 
+                                    className="w-14 bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-2 text-center text-white font-mono text-sm focus:border-indigo-500 outline-none"
+                                    value={recipeQuantities[recipe.name] || ""}
+                                    onChange={(e) => handleRecipeQtyChange(recipe.name, e.target.value)}
+                                />
+                                <button 
+                                    onClick={(e) => { 
+                                        handleAddRecipe(recipe); 
+                                        const btn = e.currentTarget; 
+                                        btn.innerHTML = "✔"; 
+                                        btn.classList.add("bg-emerald-600", "text-white"); 
+                                        setTimeout(() => { 
+                                            btn.innerHTML = "Add"; 
+                                            btn.classList.remove("bg-emerald-600", "text-white"); 
+                                        }, 1000); 
+                                    }} 
+                                    className="px-4 py-2 bg-[#3A4048] text-[#f0f6fc] hover:bg-indigo-600 hover:text-white rounded-lg font-bold text-sm transition-all active:scale-95 shadow-lg whitespace-nowrap"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {list.length === 0 && <div className="text-center text-[#f0f6fc]/40 mt-10">No recipes found.</div>}
+                </div>
+            );
+
+            return (
+                <div className="fixed inset-0 bg-black/90 flex flex-col z-[85] backdrop-blur-sm animate-in overflow-hidden">
+                    <div className="p-4 border-b border-[#3A4048] flex justify-between items-center bg-[#1D1F23]">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Icons.DollarSign className="text-emerald-400" /> Manual POS Entry</h2>
+                        <button onClick={onClose} className="p-2 bg-[#3A4048] text-[#f0f6fc]/80 rounded-lg hover:bg-[#4A5462]">Close</button>
+                    </div>
+                    <div className="p-4 border-b border-[#3A4048] bg-[#121212] space-y-3">
+                        <div className="flex p-1 bg-[#0A0A0A] rounded-xl border border-[#3A4048]">
+                            <button onClick={() => setActiveTab('products')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'products' ? 'bg-[#3A4048] text-white shadow' : 'text-[#f0f6fc]/40 hover:text-white'}`}>PRODUCTS</button>
+                            <button onClick={() => setActiveTab('cocktails')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'cocktails' ? 'bg-indigo-600 text-white shadow' : 'text-[#f0f6fc]/40 hover:text-white'}`}><Icons.Cocktail size={14} /> COCKTAILS</button>
+                            <button onClick={() => setActiveTab('pitchers')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'pitchers' ? 'bg-amber-600 text-white shadow' : 'text-[#f0f6fc]/40 hover:text-white'}`}><Icons.Pitcher size={14} /> PITCHERS</button>
+                        </div>
+                        <div className="relative"><Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50" size={18} /><input type="text" placeholder={`Search ${activeTab.slice(0, -1)}...`} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-all placeholder:text-[#f0f6fc]/40 text-sm font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />{searchTerm && <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50 hover:text-white">✕</button>}</div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-8">
+                        {activeTab === 'products' ? (
+                            filteredData.length === 0 ? <div className="text-center text-[#f0f6fc]/40 mt-10">No products found.</div> : filteredData.map(cat => (
+                                <div key={cat.category} className="space-y-3">
+                                    <div className="sticky top-0 bg-[#0A0A0A]/95 backdrop-blur py-2 z-10 border-b border-[#3A4048]"><h3 className="text-indigo-400 font-bold text-sm uppercase tracking-wider">{cat.category}</h3></div>
+                                    <div className="grid gap-2">{cat.items.map(item => {
+                                            const isUnit = cat.category.includes("Beers") || cat.category.includes("Seltzer") || cat.category.includes("Non");
+                                            return (
+                                                <div key={item.id} className="bg-[#1D1F23] p-3 rounded-xl border border-[#3A4048] flex flex-col gap-2 shadow-sm">
+                                                    <div className="flex justify-between items-center"><span className="font-bold text-white text-sm">{item.name}</span><span className="text-emerald-400 font-mono font-bold text-xs bg-emerald-900/20 px-2 py-0.5 rounded border border-emerald-500/30">Total: {item.sales || 0}</span></div>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <div className="relative"><label className="text-[9px] text-[#f0f6fc]/40 uppercase font-bold block mb-1">{isUnit ? 'Units' : 'Btls'}</label><input type="number" placeholder="0" className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-1.5 text-center text-white font-mono text-sm focus:border-indigo-500 outline-none" value={item.sold_bottles || ""} onChange={(e) => handleLocalSalesChange(item, 'bottles', e.target.value, cat.category)}/></div>
+                                                        <div className="relative"><label className="text-[9px] text-[#f0f6fc]/40 uppercase font-bold block mb-1">{isUnit ? 'Bkt(x6)' : 'Shots'}</label><input type="number" placeholder="0" className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-1.5 text-center text-white font-mono text-sm focus:border-indigo-500 outline-none" value={item.sold_shots || ""} onChange={(e) => handleLocalSalesChange(item, 'shots', e.target.value, cat.category)}/></div>
+                                                        <div className="relative"><label className="text-[9px] text-[#f0f6fc]/40 uppercase font-bold block mb-1">Comps</label><input type="number" placeholder="0" className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-1.5 text-center text-white font-mono text-sm focus:border-emerald-500 outline-none text-emerald-100" value={item.sold_comps || ""} onChange={(e) => handleLocalSalesChange(item, 'comps', e.target.value, cat.category)}/></div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}</div>
+                                </div>
+                            ))
+                        ) : activeTab === 'cocktails' ? (
+                            renderRecipeList(filteredCocktails)
+                        ) : (
+                            renderRecipeList(filteredPitchers)
                         )}
                     </div>
                 </div>
             );
         };
 
-        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, onShowPurchasesLog, logoSrc, onLogoUpload, onShowCount, isSaving, onToggleSearch, showSearch, onToggleZoneSelector, showZoneSelector }) => {
+        const Header = ({ onNewPeriod, onClearAll, onDownload, onDownloadPDF, onShowCharts, onBackup, onRestore, isCloud, onShopping, onShowPurchasesLog, onShowSalesEntry, logoSrc, onLogoUpload, onShowCount, isSaving, onToggleSearch, showSearch, onToggleZoneSelector, showZoneSelector }) => {
             const [showMenu, setShowMenu] = useState(false);
             const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
             return (
@@ -732,17 +894,7 @@
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full"><Icons.Upload size={16} className="text-white" /></div>
                             </div>
                             <input type="file" id="logo-upload" accept="image/*" className="hidden" onChange={onLogoUpload} />
-                            <div>
-                                <h1 className="font-bold text-lg leading-tight text-white flex items-baseline gap-2">
-                                    Master Bar Control 
-                                    <span className="text-xs text-[#f0f6fc]/40 font-mono">v{APP_VERSION}</span>
-                                </h1>
-                                <div className="flex items-center gap-2 text-xs mt-1 flex-wrap">
-                                    <span className={`px-2 py-0.5 rounded-full border ${isCloud ? 'bg-indigo-900/50 border-indigo-500 text-indigo-200' : 'bg-[#3A4048] border-[#4A5462] text-[#f0f6fc]/50'} flex items-center gap-1 transition-colors`}>{isCloud ? <Icons.Cloud size={10} /> : <Icons.HardDrive size={10} />}{isCloud ? 'Cloud' : 'Local'}</span>
-                                    <span className="text-[#f0f6fc]/50 font-bold uppercase tracking-wider text-[10px] border-l border-[#3A4048] pl-2 ml-1">{dateStr}</span>
-                                    {isSaving && <span className="ml-2 flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-900/50 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold uppercase animate-in"><div className="w-2 h-2 rounded-full bg-emerald-400 saving-pulse"></div> Saving...</span>}
-                                </div>
-                            </div>
+                            <div><h1 className="font-bold text-lg leading-tight text-white flex items-baseline gap-2">Master Bar Control <span className="text-xs text-[#f0f6fc]/40 font-mono">v{APP_VERSION}</span></h1><div className="flex items-center gap-2 text-xs mt-1 flex-wrap"><span className={`px-2 py-0.5 rounded-full border ${isCloud ? 'bg-indigo-900/50 border-indigo-500 text-indigo-200' : 'bg-[#3A4048] border-[#4A5462] text-[#f0f6fc]/50'} flex items-center gap-1 transition-colors`}>{isCloud ? <Icons.Cloud size={10} /> : <Icons.HardDrive size={10} />}{isCloud ? 'Cloud' : 'Local'}</span><span className="text-[#f0f6fc]/50 font-bold uppercase tracking-wider text-[10px] border-l border-[#3A4048] pl-2 ml-1">{dateStr}</span>{isSaving && <span className="ml-2 flex items-center gap-2 px-2 py-0.5 rounded-full bg-emerald-900/50 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold uppercase animate-in"><div className="w-2 h-2 rounded-full bg-emerald-400 saving-pulse"></div> Saving...</span>}</div></div>
                         </div>
                         <div className="flex flex-col lg:items-end gap-2 w-full lg:w-auto relative">
                             <div className="flex flex-wrap justify-center lg:justify-end gap-2 w-full lg:w-auto items-center">
@@ -751,85 +903,10 @@
                                 <button onClick={onShowCount} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 active:scale-95 text-sm border border-emerald-400"><Icons.List size={20} /> COUNT</button>
                                 <button onClick={() => setShowMenu(!showMenu)} className={`flex items-center justify-center w-11 h-11 rounded-xl font-bold shadow-lg active:scale-95 border transition-all ${showMenu ? 'bg-slate-600 text-white ring-2 ring-slate-500/50 scale-105' : 'bg-slate-700 hover:bg-slate-600 text-white border-slate-500 shadow-slate-900/30'}`}><Icons.Settings size={22} /></button>
                             </div>
-                            {showMenu && (
-                                <>
-                                    <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div>
-                                    <div className="absolute top-full right-0 mt-4 w-72 bg-[#1D1F23] border border-[#3A4048] rounded-3xl shadow-2xl z-50 p-3 flex flex-col gap-2 animate-in origin-top-right">
-                                        <div className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold tracking-widest px-3 py-2 border-b border-[#3A4048]/50 mb-1">Menu & Tools</div>
-                                        
-                                        <div className="flex gap-2 p-1">
-                                            <button onClick={() => { onBackup(); setShowMenu(false); }} className="flex-1 flex items-center justify-center gap-2 bg-[#0A0A0A] hover:bg-[#3A4048] text-[#f0f6fc]/80 p-3 rounded-xl text-xs font-bold border border-[#3A4048] transition-all">
-                                                <Icons.Save size={14} /> Backup
-                                            </button>
-                                            <button onClick={() => { onRestore(); setShowMenu(false); }} className="flex-1 flex items-center justify-center gap-2 bg-[#0A0A0A] hover:bg-[#3A4048] text-[#f0f6fc]/80 p-3 rounded-xl text-xs font-bold border border-[#3A4048] transition-all">
-                                                <Icons.Upload size={14} /> Load
-                                            </button>
-                                        </div>
-
-                                        <button onClick={() => { onShowPurchasesLog(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left">
-                                            <Icons.Package size={20} className="text-emerald-400" /> View Purchases Log
-                                        </button>
-
-                                        <button onClick={() => { onShopping(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.ShoppingCart size={20} className="text-amber-400" /> Shopping List</button>
-                                        <button onClick={() => { onShowCharts(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.BarChart size={20} className="text-indigo-400" /> Performance Analytics</button>
-                                        <button onClick={() => { onDownloadPDF(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.FileText size={20} className="text-rose-400" /> Download PDF Report</button>
-                                        <button onClick={() => { onNewPeriod(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.ArrowRight size={20} className="text-emerald-400" /> Start Next Period</button>
-                                        <div className="h-px bg-[#3A4048] my-1 mx-2"></div>
-                                        <button onClick={() => { onClearAll(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-red-900/20 text-red-400 transition-all text-base font-bold text-left group"><Icons.Trash size={20} className="group-hover:scale-110 transition-transform" /> Reset Inventory</button>
-                                    </div>
-                                </>
-                            )}
+                            {showMenu && (<><div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)}></div><div className="absolute top-full right-0 mt-4 w-72 bg-[#1D1F23] border border-[#3A4048] rounded-3xl shadow-2xl z-50 p-3 flex flex-col gap-2 animate-in origin-top-right"><div className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold tracking-widest px-3 py-2 border-b border-[#3A4048]/50 mb-1">Menu & Tools</div><div className="flex gap-2 p-1"><button onClick={() => { onBackup(); setShowMenu(false); }} className="flex-1 flex items-center justify-center gap-2 bg-[#0A0A0A] hover:bg-[#3A4048] text-[#f0f6fc]/80 p-3 rounded-xl text-xs font-bold border border-[#3A4048] transition-all"><Icons.Save size={14} /> Backup</button><button onClick={() => { onRestore(); setShowMenu(false); }} className="flex-1 flex items-center justify-center gap-2 bg-[#0A0A0A] hover:bg-[#3A4048] text-[#f0f6fc]/80 p-3 rounded-xl text-xs font-bold border border-[#3A4048] transition-all"><Icons.Upload size={14} /> Load</button></div><button onClick={() => { onShowPurchasesLog(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.Package size={20} className="text-emerald-400" /> View Purchases Log</button><button onClick={() => { onShowSalesEntry(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.DollarSign size={20} className="text-emerald-400" /> Manual POS Entry</button><button onClick={() => { onShopping(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.ShoppingCart size={20} className="text-amber-400" /> Shopping List</button><button onClick={() => { onShowCharts(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.BarChart size={20} className="text-indigo-400" /> Performance Analytics</button><button onClick={() => { onDownloadPDF(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.FileText size={20} className="text-rose-400" /> Download PDF Report</button><button onClick={() => { onNewPeriod(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-[#3A4048] text-[#f0f6fc] transition-all text-base font-medium text-left"><Icons.ArrowRight size={20} className="text-emerald-400" /> Start Next Period</button><div className="h-px bg-[#3A4048] my-1 mx-2"></div><button onClick={() => { onClearAll(); setShowMenu(false); }} className="flex items-center gap-3 p-4 rounded-2xl hover:bg-red-900/20 text-red-400 transition-all text-base font-bold text-left group"><Icons.Trash size={20} className="group-hover:scale-110 transition-transform" /> Reset Inventory</button></div></>)}
                         </div>
                     </div>
                 </header>
-            );
-        };
-
-        const CategoryHeader = ({ title, icon: Icon, isOpen, toggle }) => (
-            <button onClick={toggle} className="w-full flex items-center justify-between p-4 bg-[#1D1F23] border border-[#3A4048] hover:bg-[#1D1F23]/80 rounded-xl shadow-lg mb-2 transition-all group"><div className="flex items-center gap-3"><div className="text-indigo-400 group-hover:text-indigo-300 transition-colors"><Icon size={20} /></div><h2 className="font-bold text-white text-lg group-hover:text-white transition-colors">{title}</h2></div>{isOpen ? <Icons.ChevronUp className="text-[#f0f6fc]/50" /> : <Icons.ChevronDown className="text-[#f0f6fc]/50" />}</button>
-        );
-
-        const InputField = ({ label, value, onChange, colorClass = "border-[#30363d]", icon: Icon }) => (
-            <div className="relative group"><label className="block text-[10px] text-[#f0f6fc]/60 font-bold uppercase mb-1 flex items-center gap-1 group-hover:text-indigo-400 transition-colors">{Icon && <Icon size={10} />} {label}</label><input type="number" step="0.1" placeholder="-" value={value} onChange={(e) => onChange(e.target.value)} className={`w-full bg-[#0A0A0A] border rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all ${colorClass} ${value !== "" && value !== 0 ? 'text-indigo-300 font-bold border-indigo-500/50 bg-indigo-900/20' : 'text-[#f0f6fc]/50'}`} /></div>
-        );
-        
-        const InventoryRow = ({ item, onUpdate, onLinkBarcode, pendingBarcode, isWells, categoryName, onScanRequest, onDelete }) => {
-            const [isExpanded, setIsExpanded] = useState(false);
-            const isUnitBased = categoryName.includes("Beers") || categoryName.includes("Seltzer") || categoryName.includes("Non Alcoholic");
-            const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
-            const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
-            const purchases = parseFloat(item.purchases) || 0; const sales = parseFloat(item.sales) || 0;
-            const systemConsumption = totalStart + purchases - totalPhys; const diff = sales - systemConsumption;
-            const hasPhysical = item.bar1 || item.bar2 || item.bodega || item.barroluco; const hasStart = item.start_bar1 || item.start_bar2 || item.start_bodega || item.start_barroluco;
-            const bottleSizeOz = isWells ? 33.814 : 25.36; const shotsPerBottle = bottleSizeOz / 1.2; 
-            const handleSalesChange = (type, val) => {
-                let newBottles = type === 'bottles' ? val : (item.sold_bottles || ""); let newShots = type === 'shots' ? val : (item.sold_shots || ""); let newComps = type === 'comps' ? val : (item.sold_comps || "");
-                const b = parseFloat(newBottles) || 0; const s = parseFloat(newShots) || 0; const c = parseFloat(newComps) || 0;
-                let totalSales = 0; if (isUnitBased) totalSales = b + (s * 6) + c; else totalSales = b + ((s * 1.2) / bottleSizeOz) + c;
-                onUpdate(item.id, { sold_bottles: newBottles, sold_shots: newShots, sold_comps: newComps, sales: totalSales > 0 ? totalSales.toFixed(2) : "" });
-            };
-            let statusColor = "bg-[#1D1F23] border-[#3A4048]"; let badgeClass = "text-[#f0f6fc]/60 bg-[#0A0A0A] border border-[#3A4048]";
-            if (hasPhysical && hasStart) { if (diff < -0.1) { statusColor = "bg-[#1D1F23] border-red-500/50 shadow-[inset_4px_0_0_0_#ef4444]"; badgeClass = "text-red-400 bg-red-900/20 border border-red-500/30"; } else if (diff > 0.1) { statusColor = "bg-[#1D1F23] border-blue-500/50 shadow-[inset_4px_0_0_0_#3b82f6]"; badgeClass = "text-blue-400 bg-blue-900/20 border border-blue-500/30"; } else { statusColor = "bg-[#1D1F23] border-emerald-500/50 shadow-[inset_4px_0_0_0_#10b981]"; badgeClass = "text-emerald-400 bg-emerald-900/20 border border-emerald-500/30"; } }
-
-            return (
-                <div className={`rounded-xl border shadow-lg transition-all duration-300 overflow-hidden ${statusColor} mb-3 relative z-10`}>
-                    <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-[#1D1F23]/80 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
-                        <div className="flex-1"><div className="flex items-center gap-2"><span className="font-bold text-white text-base">{item.name}</span>{(item.barcode || item.barcode_case) && <Icons.Barcode size={14} className="text-indigo-400" />}{(hasPhysical && hasStart) ? <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${badgeClass}`}>{diff > 0 ? "+" : ""}{diff.toFixed(1)}</span> : null}</div><div className="text-xs text-[#f0f6fc]/50 mt-1 flex gap-3 font-mono"><span>On Hand: <b className="text-white">{totalStart}</b></span><span className="text-[#f0f6fc]/40">|</span><span>Physical: <b className="text-white">{totalPhys}</b></span></div></div>
-                        <div>{isExpanded ? <Icons.ChevronUp className="text-[#f0f6fc]/50" /> : <Icons.ChevronDown className="text-[#f0f6fc]/50" />}</div>
-                    </div>
-                    {isExpanded && (
-                        <div className="p-4 border-t border-[#3A4048]/50 bg-[#0A0A0A]/50 space-y-4 animate-in">
-                            <div className="space-y-2 mb-3">
-                                <div className="flex items-center justify-between bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]"><div className="flex items-center gap-2"><Icons.Barcode className="text-[#f0f6fc]/60" size={16} /><div className="flex flex-col"><span className="text-[10px] uppercase text-[#f0f6fc]/50 font-bold">Unit Barcode (CSV)</span><span className="text-xs font-mono text-white">{item.barcode ? item.barcode.split(',')[0].trim() : "Unlinked"}</span></div></div><button onClick={() => onScanRequest(item.id, 'unit')} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-lg font-bold shadow-lg shadow-indigo-900/20 active:scale-95 transition-all"><Icons.Scan size={14} /> {item.barcode ? "Change/Add" : "Link Unit"}</button></div>
-                            </div>
-                            <div className="bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]"><div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.Box size={12} /> 1. On Hand (Start)</div><div className="grid grid-cols-4 gap-2"><InputField label="Bar 1" value={item.start_bar1} onChange={(v) => onUpdate(item.id, 'start_bar1', v)} colorClass="border-[#3A4048] focus:border-amber-500" /><InputField label="Bar 2" value={item.start_bar2} onChange={(v) => onUpdate(item.id, 'start_bar2', v)} colorClass="border-[#3A4048] focus:border-amber-500" /><InputField label="Storage" value={item.start_bodega} onChange={(v) => onUpdate(item.id, 'start_bodega', v)} colorClass="border-[#3A4048] focus:border-amber-500" /><InputField label="Barroluco" value={item.start_barroluco} onChange={(v) => onUpdate(item.id, 'start_barroluco', v)} colorClass="border-[#3A4048] focus:border-amber-500" /></div></div>
-                            <div className="bg-[#1D1F23] p-3 rounded-lg border border-[#3A4048]"><div className="grid grid-cols-1 gap-3"><InputField label="2. Purchases (+)" value={item.purchases} onChange={(v) => onUpdate(item.id, 'purchases', v)} icon={Icons.ShoppingCart} colorClass="border-emerald-900/50 focus:border-emerald-500 text-emerald-300" /></div></div>
-                            <div className="bg-[#0A0A0A] p-3 rounded-lg border border-[#3A4048]"><div className="flex items-center gap-2 mb-3 text-indigo-400 font-bold text-[10px] uppercase tracking-wider"><Icons.MapPin size={12} /> 3. Physical Count (End)</div><div className="grid grid-cols-4 gap-2"><InputField label="Bar 1" value={item.bar1} onChange={(v) => onUpdate(item.id, 'bar1', v)} colorClass="border-[#3A4048] focus:border-indigo-500" /><InputField label="Bar 2" value={item.bar2} onChange={(v) => onUpdate(item.id, 'bar2', v)} colorClass="border-[#3A4048] focus:border-indigo-500" /><InputField label="Storage" value={item.bodega} onChange={(v) => onUpdate(item.id, 'bodega', v)} colorClass="border-[#3A4048] focus:border-indigo-500" /><InputField label="Barroluco" value={item.barroluco} onChange={(v) => onUpdate(item.id, 'barroluco', v)} colorClass="border-[#3A4048] focus:border-indigo-500" /></div></div>
-                            <div className="bg-amber-900/10 p-3 rounded-lg border border-amber-900/20"><div className="flex items-center gap-2 mb-3 text-amber-500 font-bold text-[10px] uppercase tracking-wider"><Icons.Calculator size={12} /> 4. Sales Calculator (POS)</div><div className="mb-4 bg-amber-500/5 p-3 rounded border border-amber-500/10"><div className="text-[10px] text-amber-300 mb-1 uppercase font-bold">{isUnitBased ? "Unit Calculator" : `Shot Calculator (1.2oz @ ${isWells ? '1L' : '750ml'})`}</div><div className="grid grid-cols-3 gap-3 mb-2"><div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Cans / Units" : "Bottles"}</label><input type="number" step="1" placeholder="0" value={item.sold_bottles || ""} onChange={(e) => handleSalesChange('bottles', e.target.value)} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100" /></div><div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Buckets (x6)" : "Shots"}</label><input type="number" step="1" placeholder="0" value={item.sold_shots || ""} onChange={(e) => handleSalesChange('shots', e.target.value)} className="w-full bg-[#0A0A0A] border border-[#3A4048] rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-amber-500 text-amber-100" /></div><div className="relative group"><label className="block text-[10px] text-amber-300/70 font-bold uppercase mb-1">{isUnitBased ? "Comps (Units)" : "Comps (Bottles)"}</label><input type="number" step="1" placeholder="0" value={item.sold_comps || ""} onChange={(e) => handleSalesChange('comps', e.target.value)} className="w-full bg-[#0A0A0A] border border-emerald-700/50 rounded-lg px-2 py-2 font-mono text-sm focus:outline-none focus:border-emerald-500 text-emerald-100" /></div></div></div><div className="grid grid-cols-1 gap-3"><InputField label="Total Sales POS (Calculated)" value={item.sales} onChange={(v) => onUpdate(item.id, 'sales', v)} icon={Icons.DollarSign} colorClass="border-blue-900/50 focus:border-blue-500 text-blue-300" /></div><div className="text-right mt-4 text-xs text-[#f0f6fc]/50 font-mono space-y-2"><div className="text-amber-500/80">Sys Sales = {totalStart} + {purchases || 0} - {totalPhys} = <b>{systemConsumption}</b></div><div className={`text-xl font-black ${diff < 0 ? 'text-red-600' : 'text-emerald-600'}`}>Diff = {diff.toFixed(2)}</div></div></div>
-                            <div className="flex justify-between items-center pt-4 border-t border-[#3A4048]/50 mt-2"><div className="text-[9px] text-[#f0f6fc]/30 font-mono">ID: {item.id}</div><button onClick={(e) => { e.stopPropagation(); onDelete(item); }} className="flex items-center gap-2 bg-red-900/10 hover:bg-red-900/30 text-red-500 hover:text-red-400 border border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"><Icons.Trash size={14} /> Delete</button></div>
-                        </div>
-                    )}
-                </div>
             );
         };
 
@@ -873,6 +950,7 @@
             const [showCharts, setShowCharts] = useState(false);
             const [showShopping, setShowShopping] = useState(false);
             const [showPurchasesLog, setShowPurchasesLog] = useState(false);
+            const [showSalesEntry, setShowSalesEntry] = useState(false);
             const [shoppingItems, setShoppingItems] = useState([]);
             const [isScanning, setIsScanning] = useState(false);
             const [pendingBarcode, setPendingBarcode] = useState(null);
@@ -882,292 +960,106 @@
             useEffect(() => {
                 const initApp = async () => {
                     const fb = window.fb;
-                    
                     const configToUse = ENV_FIREBASE_CONFIG || (FIREBASE_CONFIG.apiKey ? FIREBASE_CONFIG : null);
-                    
                     if (configToUse && fb) {
                         try {
                             const app = fb.initializeApp(configToUse);
                             const auth = fb.getAuth(app);
                             const db = fb.getFirestore(app);
-                            
-                            if (ENV_AUTH_TOKEN) {
-                                await fb.signInWithCustomToken(auth, ENV_AUTH_TOKEN);
-                            } else {
-                                await fb.signInAnonymously(auth);
-                            }
-                            
+                            if (ENV_AUTH_TOKEN) await fb.signInWithCustomToken(auth, ENV_AUTH_TOKEN);
+                            else await fb.signInAnonymously(auth);
                             fb.onAuthStateChanged(auth, (u) => {
                                 setUser(u);
                                 if (u) {
                                     setIsCloud(true);
                                     const collectionPath = ENV_APP_ID !== 'default-app-id' ? `artifacts/${ENV_APP_ID}/public/data/inventory` : 'inventory';
-                                    const docId = 'master';
-                                    const docRef = fb.doc(db, collectionPath, docId);
-                                    
+                                    const docRef = fb.doc(db, collectionPath, 'master');
                                     fb.onSnapshot(docRef, (docSnap) => {
-                                        if (docSnap.exists()) {
-                                            if (!isSaving) setData(docSnap.data().items);
-                                        } else { 
-                                            fb.setDoc(docRef, { items: INITIAL_DATA }); 
-                                            setData(INITIAL_DATA); 
-                                        }
+                                        if (docSnap.exists()) { if (!isSaving) setData(docSnap.data().items); } 
+                                        else { fb.setDoc(docRef, { items: INITIAL_DATA }); setData(INITIAL_DATA); }
                                         setLoading(false);
-                                    }, (err) => { 
-                                        console.warn("Snapshot failed", err);
-                                        setIsCloud(false); loadLocal(); 
-                                    });
+                                    }, (err) => { console.warn(err); setIsCloud(false); loadLocal(); });
                                 } else { loadLocal(); }
                             });
-                        } catch (e) { console.warn("Firebase Init failed", e); setIsCloud(false); loadLocal(); }
+                        } catch (e) { console.warn(e); setIsCloud(false); loadLocal(); }
                     } else { setIsCloud(false); loadLocal(); }
                 };
-                
                 const loadLocal = () => {
-                    try {
-                        const saved = SafeStorage.getItem(LOCAL_STORAGE_KEY);
-                        if (saved) {
-                            let loaded = JSON.parse(saved);
-                            let updated = false;
-                            INITIAL_DATA.forEach(initCat => {
-                                let targetCat = loaded.find(c => c.category === initCat.category);
-                                if (targetCat) {
-                                    initCat.items.forEach(initItem => {
-                                        if (!targetCat.items.find(i => i.id === initItem.id)) { targetCat.items.push(initItem); updated = true; }
-                                    });
-                                } else { loaded.push(initCat); updated = true; }
-                            });
-                            if (updated) SafeStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(loaded));
-                            setData(loaded);
-                        } else setData(INITIAL_DATA);
-                    } catch(e) { console.warn("Local load failed", e); setData(INITIAL_DATA); }
+                    const saved = SafeStorage.getItem(LOCAL_STORAGE_KEY);
+                    if (saved) setData(JSON.parse(saved)); else setData(INITIAL_DATA);
                     setLoading(false);
                 };
                 initApp();
             }, []);
 
+            // PDF Logic
             const generatePDF = async () => {
                 showNotification("Generating PDF Report...");
-                
-                let items = [];
-                let totalConsumed = 0; let totalSold = 0; let totalDiff = 0;
-                let catMap = {}; 
-                let catConsumed = {}; 
-                let catSold = {};
-
-                data.forEach(cat => {
-                    let cSales = 0;
-                    let cConsumed = 0;
-                    cat.items.forEach(item => {
-                        const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
-                        const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
-                        const purchases = parseFloat(item.purchases)||0; const sales = parseFloat(item.sales)||0;
-                        const systemConsumption = totalStart + purchases - totalPhys;
-                        const diff = sales - systemConsumption;
-                        
-                        if (systemConsumption > 0 || sales > 0) {
-                            items.push({ ...item, category: cat.category, totalStart, totalPhys, purchases, systemConsumption, sales, diff });
-                            totalConsumed += systemConsumption; totalSold += sales; totalDiff += diff; 
-                            cSales += sales; cConsumed += systemConsumption;
-                        }
-                    });
-                    if (cSales > 0) catMap[cat.category] = cSales;
-                    if (cConsumed > 0 || cSales > 0) {
-                        catConsumed[cat.category] = cConsumed;
-                        catSold[cat.category] = cSales;
-                    }
-                });
-                
-                items.sort((a, b) => a.diff - b.diff); 
-                const topLosses = items.filter(i => i.diff < 0).slice(0, 5); 
-
-                const createChartImage = (config) => {
-                    return new Promise((resolve) => {
-                        const canvas = document.getElementById('pdf-chart-canvas');
-                        const ctx = canvas.getContext('2d');
-                        ctx.save();
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.restore();
-                        
-                        const pdfConfig = {
-                            ...config,
-                            options: {
-                                ...config.options,
-                                animation: false,
-                                responsive: false,
-                                devicePixelRatio: 2,
-                                color: '#000000', 
-                                plugins: {
-                                    ...config.options?.plugins,
-                                    legend: { ...config.options?.plugins?.legend, labels: { color: '#000000', font: { size: 14 } } },
-                                    title: { ...config.options?.plugins?.title, color: '#000000', font: { size: 18, weight: 'bold' } },
-                                    datalabels: { color: '#000000' } 
-                                },
-                                scales: config.type !== 'pie' ? {
-                                    x: { ticks: { color: '#000000' }, grid: { color: '#cccccc' } },
-                                    y: { ticks: { color: '#000000' }, grid: { color: '#cccccc' } }
-                                } : {}
-                            }
-                        };
-
-                        if (window.pdfChart) window.pdfChart.destroy();
-                        window.pdfChart = new Chart(ctx, pdfConfig);
-                        
-                        setTimeout(() => {
-                            try {
-                                ctx.globalCompositeOperation = 'destination-over';
-                                ctx.fillStyle = '#ffffff';
-                                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                const img = canvas.toDataURL('image/jpeg', 1.0);
-                                resolve(img);
-                            } catch (e) { resolve(null); }
-                        }, 500);
-                    });
-                };
-
-                const chartImg1 = await createChartImage({
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(catMap).map(k => k.split(' ')[0]),
-                        datasets: [{ data: Object.values(catMap), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444'] }]
-                    },
-                    options: { plugins: { title: { display: true, text: 'Sales Share' }, legend: { position: 'bottom' } } }
-                });
-
-                const chartImg2 = await createChartImage({
-                    type: 'bar',
-                    data: {
-                        labels: topLosses.map(i => i.name),
-                        datasets: [{ label: 'Loss ($)', data: topLosses.map(i => i.diff), backgroundColor: '#ef4444' }]
-                    },
-                    options: { indexAxis: 'y', plugins: { title: { display: true, text: 'Top 5 Product Losses' }, legend: { display: false } } }
-                });
-
-                const chartImg3 = await createChartImage({
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(catSold).map(k => k.split(' ')[0]),
-                        datasets: [
-                            { label: 'Consumed', data: Object.values(catConsumed), backgroundColor: '#94a3b8' },
-                            { label: 'Sold', data: Object.values(catSold), backgroundColor: '#10b981' }
-                        ]
-                    },
-                    options: { plugins: { title: { display: true, text: 'Effectiveness: Used vs Sold' } } }
-                });
-
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                const dateText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-                doc.setFontSize(20); doc.setTextColor(0, 0, 0); doc.text("EXECUTIVE REPORT", 105, 20, { align: 'center' });
-                doc.setFontSize(10); doc.setTextColor(100); doc.text(`Generated: ${dateText}`, 105, 27, { align: 'center' });
-
-                doc.setFillColor(240, 240, 240); doc.rect(14, 32, 182, 25, 'F');
-                doc.setFontSize(9); doc.setTextColor(80);
-                doc.text("TOTAL CONSUMED", 40, 40, { align: 'center' });
-                doc.text("TOTAL SALES (POS)", 105, 40, { align: 'center' });
-                doc.text("NET DIFFERENCE", 170, 40, { align: 'center' });
-                doc.setFontSize(14); doc.setTextColor(0); doc.setFont("helvetica", "bold");
-                doc.text(totalConsumed.toFixed(2), 40, 50, { align: 'center' });
-                doc.setTextColor(79, 70, 229); doc.text(totalSold.toFixed(2), 105, 50, { align: 'center' });
-                doc.setTextColor(totalDiff < 0 ? 220 : 34, totalDiff < 0 ? 38 : 139, 38); 
-                doc.text(`${totalDiff > 0 ? '+' : ''}${totalDiff.toFixed(2)}`, 170, 50, { align: 'center' });
-
-                let yPos = 65;
-                if (chartImg1) { doc.addImage(chartImg1, 'JPEG', 15, yPos, 85, 65); } 
-                if (chartImg3) { doc.addImage(chartImg3, 'JPEG', 110, yPos, 85, 65); } 
-                
-                yPos += 70;
-                if (chartImg2) { 
-                    doc.addImage(chartImg2, 'JPEG', 50, yPos, 110, 60); 
-                    yPos += 65;
-                } else { yPos += 10; }
-
-                doc.autoTable({
-                    startY: yPos,
-                    head: [['Product', 'Cat', 'Start', 'Buy', 'End', 'Used', 'Sold', 'Diff']],
-                    body: items.sort((a,b) => Math.abs(b.diff) - Math.abs(a.diff)).map(i => [ 
-                        i.name, i.category.split(' ')[0], i.totalStart, i.purchases || 0, i.totalPhys, 
-                        i.systemConsumption.toFixed(2), i.sales.toFixed(2), i.diff.toFixed(2) 
-                    ]),
-                    styles: { fontSize: 8, cellPadding: 2, textColor: [0,0,0] },
-                    headStyles: { fillColor: [30, 30, 30], textColor: 255 },
-                    didParseCell: function(data) {
-                        if (data.section === 'body' && data.column.index === 7) {
-                            const val = parseFloat(data.cell.raw);
-                            if (val < -0.1) { data.cell.styles.fillColor = [255, 230, 230]; data.cell.styles.textColor = [180, 0, 0]; data.cell.styles.fontStyle = 'bold'; } 
-                            else if (val > 0.1) { data.cell.styles.fillColor = [230, 255, 230]; data.cell.styles.textColor = [0, 100, 0]; data.cell.styles.fontStyle = 'bold'; }
-                        }
-                    }
-                });
-
-                doc.save(`Executive_Report_${dateText.replace(/ /g, '_')}.pdf`);
-                showNotification("PDF Exported Successfully!");
-            };
-
-            const downloadReport = () => {
-                const dateObj = new Date();
-                const safeDate = dateObj.toISOString().split('T')[0];
-                let items = []; let totalConsumed = 0; let totalSold = 0; let totalDiff = 0;
-                data.forEach(cat => { cat.items.forEach(item => { 
+                let items = []; let totalConsumed = 0; let totalSold = 0; let totalDiff = 0; let catMap = {}; let catConsumed = {}; let catSold = {};
+                data.forEach(cat => { let cSales = 0; let cConsumed = 0; cat.items.forEach(item => {
                     const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0);
                     const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0);
                     const purchases = parseFloat(item.purchases)||0; const sales = parseFloat(item.sales)||0;
                     const systemConsumption = totalStart + purchases - totalPhys; const diff = sales - systemConsumption;
-                    if (systemConsumption > 0 || sales > 0) { items.push({ ...item, category: cat.category, totalStart, totalPhys, purchases, systemConsumption, sales, diff }); totalConsumed += systemConsumption; totalSold += sales; totalDiff += diff; }
-                })});
-                let csv = `EXECUTIVE REPORT\nDate: ${safeDate}\n\nSUMMARY\nTotal Consumed,${totalConsumed.toFixed(2)}\nTotal Sold,${totalSold.toFixed(2)}\nNet Diff,${totalDiff.toFixed(2)}\n\nDETAILS\nPRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF\n`;
-                items.forEach(i => { csv += `"${i.name}","${i.category}",${i.totalStart},${i.purchases},${i.totalPhys},${i.systemConsumption},${i.sales},${i.diff}\n` });
-                const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a"); link.href = url; link.download = `Report_${safeDate}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                    if (systemConsumption > 0 || sales > 0) { items.push({ ...item, category: cat.category, totalStart, totalPhys, purchases, systemConsumption, sales, diff }); totalConsumed += systemConsumption; totalSold += sales; totalDiff += diff; cSales += sales; cConsumed += systemConsumption; }
+                }); if (cSales > 0) catMap[cat.category] = cSales; if (cConsumed > 0 || cSales > 0) { catConsumed[cat.category] = cConsumed; catSold[cat.category] = cSales; } });
+                items.sort((a, b) => a.diff - b.diff); const topLosses = items.filter(i => i.diff < 0).slice(0, 5);
+
+                const createChartImage = (config) => {
+                    return new Promise((resolve) => {
+                        const canvas = document.getElementById('pdf-chart-canvas'); const ctx = canvas.getContext('2d');
+                        ctx.save(); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
+                        const pdfConfig = { ...config, options: { ...config.options, animation: false, responsive: false, devicePixelRatio: 2, color: '#000000', plugins: { ...config.options?.plugins, legend: { ...config.options?.plugins?.legend, labels: { color: '#000000', font: { size: 14 } } }, title: { ...config.options?.plugins?.title, color: '#000000', font: { size: 18, weight: 'bold' } }, datalabels: { color: '#000000' } }, scales: config.type !== 'pie' ? { x: { ticks: { color: '#000000' }, grid: { color: '#cccccc' } }, y: { ticks: { color: '#000000' }, grid: { color: '#cccccc' } } } : {} } };
+                        if (window.pdfChart) window.pdfChart.destroy(); window.pdfChart = new Chart(ctx, pdfConfig);
+                        setTimeout(() => { try { ctx.globalCompositeOperation = 'destination-over'; ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); const img = canvas.toDataURL('image/jpeg', 1.0); resolve(img); } catch (e) { resolve(null); } }, 500);
+                    });
+                };
+                const chartImg1 = await createChartImage({ type: 'pie', data: { labels: Object.keys(catMap).map(k => k.split(' ')[0]), datasets: [{ data: Object.values(catMap), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444'] }] }, options: { plugins: { title: { display: true, text: 'Sales Share' }, legend: { position: 'bottom' } } } });
+                const chartImg2 = await createChartImage({ type: 'bar', data: { labels: topLosses.map(i => i.name), datasets: [{ label: 'Loss ($)', data: topLosses.map(i => i.diff), backgroundColor: '#ef4444' }] }, options: { indexAxis: 'y', plugins: { title: { display: true, text: 'Top 5 Product Losses' }, legend: { display: false } } } });
+                const chartImg3 = await createChartImage({ type: 'bar', data: { labels: Object.keys(catSold).map(k => k.split(' ')[0]), datasets: [ { label: 'Consumed', data: Object.values(catConsumed), backgroundColor: '#94a3b8' }, { label: 'Sold', data: Object.values(catSold), backgroundColor: '#10b981' } ] }, options: { plugins: { title: { display: true, text: 'Effectiveness: Used vs Sold' } } } });
+
+                const { jsPDF } = window.jspdf; const doc = new jsPDF(); const dateText = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                doc.setFontSize(20); doc.setTextColor(0, 0, 0); doc.text("EXECUTIVE REPORT", 105, 20, { align: 'center' }); doc.setFontSize(10); doc.setTextColor(100); doc.text(`Generated: ${dateText}`, 105, 27, { align: 'center' });
+                doc.setFillColor(240, 240, 240); doc.rect(14, 32, 182, 25, 'F'); doc.setFontSize(9); doc.setTextColor(80); doc.text("TOTAL CONSUMED", 40, 40, { align: 'center' }); doc.text("TOTAL SALES (POS)", 105, 40, { align: 'center' }); doc.text("NET DIFFERENCE", 170, 40, { align: 'center' }); doc.setFontSize(14); doc.setTextColor(0); doc.setFont("helvetica", "bold"); doc.text(totalConsumed.toFixed(2), 40, 50, { align: 'center' }); doc.setTextColor(79, 70, 229); doc.text(totalSold.toFixed(2), 105, 50, { align: 'center' }); doc.setTextColor(totalDiff < 0 ? 220 : 34, totalDiff < 0 ? 38 : 139, 38); doc.text(`${totalDiff > 0 ? '+' : ''}${totalDiff.toFixed(2)}`, 170, 50, { align: 'center' });
+
+                let yPos = 65; if (chartImg1) { doc.addImage(chartImg1, 'JPEG', 15, yPos, 85, 65); } if (chartImg3) { doc.addImage(chartImg3, 'JPEG', 110, yPos, 85, 65); } yPos += 70; if (chartImg2) { doc.addImage(chartImg2, 'JPEG', 50, yPos, 110, 60); yPos += 65; } else { yPos += 10; }
+                doc.autoTable({ startY: yPos, head: [['Product', 'Cat', 'Start', 'Buy', 'End', 'Used', 'Sold', 'Diff']], body: items.sort((a,b) => Math.abs(b.diff) - Math.abs(a.diff)).map(i => [ i.name, i.category.split(' ')[0], i.totalStart, i.purchases || 0, i.totalPhys, i.systemConsumption.toFixed(2), i.sales.toFixed(2), i.diff.toFixed(2) ]), styles: { fontSize: 8, cellPadding: 2, textColor: [0,0,0] }, headStyles: { fillColor: [30, 30, 30], textColor: 255 }, didParseCell: function(data) { if (data.section === 'body' && data.column.index === 7) { const val = parseFloat(data.cell.raw); if (val < -0.1) { data.cell.styles.fillColor = [255, 230, 230]; data.cell.styles.textColor = [180, 0, 0]; data.cell.styles.fontStyle = 'bold'; } else if (val > 0.1) { data.cell.styles.fillColor = [230, 255, 230]; data.cell.styles.textColor = [0, 100, 0]; data.cell.styles.fontStyle = 'bold'; } } } });
+                doc.save(`Executive_Report_${dateText.replace(/ /g, '_')}.pdf`); showNotification("PDF Exported Successfully!");
             };
 
-            const updateItem = (itemId, fieldOrObj, value) => { 
-                const timestamp = Date.now();
-                const newData = data.map(cat => ({ ...cat, items: cat.items.map(item => { if (item.id === itemId) { if (typeof fieldOrObj === 'object' && fieldOrObj !== null) return { ...item, ...fieldOrObj, lastUpdated: timestamp }; return { ...item, [fieldOrObj]: value, lastUpdated: timestamp }; } return item; }) })); 
-                saveData(newData); 
+            const downloadReport = () => {
+                const dateObj = new Date(); const safeDate = dateObj.toISOString().split('T')[0]; let items = []; let totalConsumed = 0; let totalSold = 0; let totalDiff = 0;
+                data.forEach(cat => { cat.items.forEach(item => { const totalPhys = (parseFloat(item.bar1)||0) + (parseFloat(item.bar2)||0) + (parseFloat(item.bodega)||0) + (parseFloat(item.barroluco)||0); const totalStart = (parseFloat(item.start_bar1)||0) + (parseFloat(item.start_bar2)||0) + (parseFloat(item.start_bodega)||0) + (parseFloat(item.start_barroluco)||0); const purchases = parseFloat(item.purchases)||0; const sales = parseFloat(item.sales)||0; const systemConsumption = totalStart + purchases - totalPhys; const diff = sales - systemConsumption; if (systemConsumption > 0 || sales > 0) { items.push({ ...item, category: cat.category, totalStart, totalPhys, purchases, systemConsumption, sales, diff }); totalConsumed += systemConsumption; totalSold += sales; totalDiff += diff; } })});
+                let csv = `EXECUTIVE REPORT\nDate: ${safeDate}\n\nSUMMARY\nTotal Consumed,${totalConsumed.toFixed(2)}\nTotal Sold,${totalSold.toFixed(2)}\nNet Diff,${totalDiff.toFixed(2)}\n\nDETAILS\nPRODUCT,CAT,START,BUY,END,USED,SOLD,DIFF\n`; items.forEach(i => { csv += `"${i.name}","${i.category}",${i.totalStart},${i.purchases},${i.totalPhys},${i.systemConsumption},${i.sales},${i.diff}\n` });
+                const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `Report_${safeDate}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
             };
+
+            const updateItem = (itemId, fieldOrObj, value) => { const timestamp = Date.now(); const newData = data.map(cat => ({ ...cat, items: cat.items.map(item => { if (item.id === itemId) { if (typeof fieldOrObj === 'object' && fieldOrObj !== null) return { ...item, ...fieldOrObj, lastUpdated: timestamp }; return { ...item, [fieldOrObj]: value, lastUpdated: timestamp }; } return item; }) })); saveData(newData); };
+            
+            const batchUpdateItems = (updates) => {
+                const timestamp = Date.now();
+                const newData = data.map(cat => ({
+                    ...cat,
+                    items: cat.items.map(item => {
+                        const update = updates.find(u => u.id === item.id);
+                        if (update) return { ...item, ...update.changes, lastUpdated: timestamp };
+                        return item;
+                    })
+                }));
+                saveData(newData);
+            };
+
             const saveData = (newData) => {
-                setData(newData);
-                const fb = window.fb;
-                if (isCloud && user && fb) {
-                    setIsSaving(true);
-                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                    saveTimeoutRef.current = setTimeout(() => {
-                        try {
-                            const db = fb.getFirestore();
-                            const collectionPath = ENV_APP_ID !== 'default-app-id' ? `artifacts/${ENV_APP_ID}/public/data/inventory` : 'inventory';
-                            fb.setDoc(fb.doc(db, collectionPath, 'master'), { items: newData }).then(() => setIsSaving(false)).catch(() => setIsSaving(false));
-                        } catch(e) { console.error(e); setIsSaving(false); }
-                    }, 2000);
-                } else { SafeStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData)); }
+                setData(newData); const fb = window.fb;
+                if (isCloud && user && fb) { setIsSaving(true); if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); saveTimeoutRef.current = setTimeout(() => { try { const db = fb.getFirestore(); const collectionPath = ENV_APP_ID !== 'default-app-id' ? `artifacts/${ENV_APP_ID}/public/data/inventory` : 'inventory'; fb.setDoc(fb.doc(db, collectionPath, 'master'), { items: newData }).then(() => setIsSaving(false)).catch(() => setIsSaving(false)); } catch(e) { console.error(e); setIsSaving(false); } }, 2000); } else { SafeStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData)); }
             };
 
             const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(null), 3000); };
             const handleAddNewProduct = (name, category) => { const newId = `custom-${Date.now()}`; const newItem = createItem(newId, name); const newData = data.map(cat => { if (cat.category === category) return { ...cat, items: [...cat.items, newItem] }; return cat; }); saveData(newData); showNotification(`Added: ${name}`); };
             const handleLogoChange = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { const base64 = ev.target.result; setLogo(base64); SafeStorage.setItem('BAR_LOGO', base64); showNotification("Logo Updated!"); }; reader.readAsDataURL(file); };
-            
             const handleRestoreFile = (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { try { const d = JSON.parse(ev.target.result); if (Array.isArray(d) && d[0].category) { setPendingImportData(d); setShowImportModal(true); } else { showNotification("Invalid file."); } } catch(err) { showNotification("Error reading file."); } }; reader.readAsText(file); e.target.value = null; };
             const handleReplaceData = () => { if (pendingImportData) { saveData(pendingImportData); showNotification("Data replaced!"); setShowImportModal(false); setPendingImportData(null); } };
-            const handleMergeData = () => {
-                if (!pendingImportData) return;
-                const newData = JSON.parse(JSON.stringify(data));
-                pendingImportData.forEach(incomingCat => {
-                    let targetCat = newData.find(c => c.category === incomingCat.category);
-                    if (!targetCat) { newData.push(incomingCat); return; }
-                    incomingCat.items.forEach(incomingItem => {
-                        let targetItem = targetCat.items.find(i => i.id === incomingItem.id);
-                        if (!targetItem) { targetCat.items.push(incomingItem); } else {
-                            const numericFields = ['bar1', 'bar2', 'bodega', 'barroluco', 'start_bar1', 'start_bar2', 'start_bodega', 'start_barroluco', 'purchases', 'sales', 'sold_bottles', 'sold_shots', 'sold_comps', 'bar1_cooler', 'bar1_small_cooler_1', 'bar1_small_cooler_2', 'bar1_reaching', 'bar1_shelf', 'bar1_well_1', 'bar1_well_2', 'bar2_cooler', 'bar2_small_cooler', 'bodega_closet', 'bodega_shelves'];
-                            numericFields.forEach(field => { const currentVal = parseFloat(targetItem[field]) || 0; const incomingVal = parseFloat(incomingItem[field]) || 0; if (incomingVal !== 0) { const sum = currentVal + incomingVal; targetItem[field] = sum !== 0 ? sum.toString() : ""; } });
-                            if (!targetItem.barcode && incomingItem.barcode) targetItem.barcode = incomingItem.barcode; if (!targetItem.barcode_case && incomingItem.barcode_case) targetItem.barcode_case = incomingItem.barcode_case;
-                        }
-                    });
-                });
-                saveData(newData); showNotification("Merge successful!"); setShowImportModal(false); setPendingImportData(null);
-            };
+            const handleMergeData = () => { if (!pendingImportData) return; const newData = JSON.parse(JSON.stringify(data)); pendingImportData.forEach(incomingCat => { let targetCat = newData.find(c => c.category === incomingCat.category); if (!targetCat) { newData.push(incomingCat); return; } incomingCat.items.forEach(incomingItem => { let targetItem = targetCat.items.find(i => i.id === incomingItem.id); if (!targetItem) { targetCat.items.push(incomingItem); } else { const numericFields = ['bar1', 'bar2', 'bodega', 'barroluco', 'start_bar1', 'start_bar2', 'start_bodega', 'start_barroluco', 'purchases', 'sales', 'sold_bottles', 'sold_shots', 'sold_comps', 'bar1_cooler', 'bar1_small_cooler_1', 'bar1_small_cooler_2', 'bar1_reaching', 'bar1_shelf', 'bar1_well_1', 'bar1_well_2', 'bar2_cooler', 'bar2_small_cooler', 'bodega_closet', 'bodega_shelves']; numericFields.forEach(field => { const currentVal = parseFloat(targetItem[field]) || 0; const incomingVal = parseFloat(incomingItem[field]) || 0; if (incomingVal !== 0) { const sum = currentVal + incomingVal; targetItem[field] = sum !== 0 ? sum.toString() : ""; } }); if (!targetItem.barcode && incomingItem.barcode) targetItem.barcode = incomingItem.barcode; if (!targetItem.barcode_case && incomingItem.barcode_case) targetItem.barcode_case = incomingItem.barcode_case; } }); }); saveData(newData); showNotification("Merge successful!"); setShowImportModal(false); setPendingImportData(null); };
             const handleBackup = () => { const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `Bar_Backup_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); };
             const checkBarcodeMatch = (decodedText, item) => { if (item.barcode && item.barcode.split(',').some(code => code.trim() === decodedText)) return true; if (item.barcode_case && item.barcode_case === decodedText) return true; return false; };
             const handleScanSuccess = (decodedText, scannerInstance) => { if (scanningForItem) { playSound('success'); setIsScanning(false); const { id, type } = scanningForItem; const targetField = type === 'case' ? 'barcode_case' : 'barcode'; const newData = data.map(cat => ({ ...cat, items: cat.items.map(item => { if (item.id === id) { if (type === 'unit') { const existingCodes = item.barcode ? item.barcode.split(',').map(c => c.trim()) : []; if (!existingCodes.includes(decodedText)) return { ...item, barcode: existingCodes.length > 0 ? `${item.barcode},${decodedText}` : decodedText }; return item; } return { ...item, [targetField]: decodedText }; } return item; }) })); saveData(newData); showNotification(`Code linked!`); setScanningForItem(null); return; } let foundItem = null; for (const cat of data) { const match = cat.items.find(i => checkBarcodeMatch(decodedText, i)); if (match) { foundItem = match; break; } } if (foundItem) { playSound('success'); setIsScanning(false); setQuickScanItemId(foundItem.id); showNotification(`Opening: ${foundItem.name}`); updateItem(foundItem.id, {}, null); } else { playSound('error'); showNotification(`Code ${decodedText} not recognized`); setIsResetting(true); setTimeout(() => { setIsResetting(false); }, 500); } };
@@ -1186,7 +1078,7 @@
             return (
                 <div className="min-h-screen bg-transparent font-sans pb-20">
                     <div className="sticky top-0 left-0 right-0 z-50 shadow-xl bg-[#1D1F23]/90 backdrop-blur-md">
-                        <Header onNewPeriod={confirmNewPeriod} onClearAll={confirmClearAll} onDownload={downloadReport} onDownloadPDF={generatePDF} onShowCharts={() => setShowCharts(true)} onBackup={handleBackup} onRestore={() => fileInputRef.current.click()} isCloud={isCloud} onShopping={generateShoppingList} onShowPurchasesLog={() => setShowPurchasesLog(true)} logoSrc={logo} onLogoUpload={handleLogoChange} onAddProduct={() => setShowAddProduct(true)} onShowCount={() => setShowCountReview(true)} isSaving={isSaving} onToggleSearch={() => setShowSearch(!showSearch)} showSearch={showSearch} onToggleZoneSelector={() => setShowZoneSelector(!showZoneSelector)} showZoneSelector={showZoneSelector} />
+                        <Header onNewPeriod={confirmNewPeriod} onClearAll={confirmClearAll} onDownload={downloadReport} onDownloadPDF={generatePDF} onShowCharts={() => setShowCharts(true)} onBackup={handleBackup} onRestore={() => fileInputRef.current.click()} isCloud={isCloud} onShopping={generateShoppingList} onShowPurchasesLog={() => setShowPurchasesLog(true)} onShowSalesEntry={() => setShowSalesEntry(true)} logoSrc={logo} onLogoUpload={handleLogoChange} onAddProduct={() => setShowAddProduct(true)} onShowCount={() => setShowCountReview(true)} isSaving={isSaving} onToggleSearch={() => setShowSearch(!showSearch)} showSearch={showSearch} onToggleZoneSelector={() => setShowZoneSelector(!showZoneSelector)} showZoneSelector={showZoneSelector} />
                         {showZoneSelector && (
                             <div className="bg-[#121212]/95 border-b border-[#3A4048] p-3 animate-in">
                                 <div className="max-w-[360px] mx-auto bg-[#1D1F23] rounded-xl border border-[#3A4048] p-2 shadow-lg">
@@ -1211,6 +1103,7 @@
                     {showCharts && <ChartsView data={data} onClose={() => setShowCharts(false)} />}
                     {showShopping && <ShoppingListModal isOpen={showShopping} onClose={() => setShowShopping(false)} items={shoppingItems} />}
                     {showPurchasesLog && <PurchasesLogModal isOpen={showPurchasesLog} onClose={() => setShowPurchasesLog(false)} data={data} />}
+                    {showSalesEntry && <SalesEntryModal isOpen={showSalesEntry} onClose={() => setShowSalesEntry(false)} data={data} onUpdate={updateItem} onBatchUpdate={batchUpdateItems} />}
                     {showCountReview && <CountReviewModal isOpen={showCountReview} onClose={() => setShowCountReview(false)} data={data} onUpdate={updateItem} />}
                     {isScanning && !isResetting && (<ScannerModal key={scanAttempt} onScanSuccess={handleScanSuccess} onClose={() => { setIsScanning(false); setScanningForItem(null); }} />)}
                     {quickScanItemId && activeQuickItem && (<QuickEditModal item={activeQuickItem} onClose={() => { setQuickScanItemId(null); setIsScanning(true); setScanAttempt(0); }} onUpdate={updateItem} initialLocation={currentLocation}/>)}
