@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Bar Control v4.2</title>
+    <title>Master Bar Control v4.3</title>
     
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -102,7 +102,7 @@
 <body>
     <div id="root">
         <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: rgba(240, 246, 252, 0.5); flex-direction: column; gap: 1rem;">
-            <div class="animate-pulse">Loading Master Bar Control v4.2...</div>
+            <div class="animate-pulse">Loading Master Bar Control v4.3...</div>
         </div>
     </div>
     
@@ -129,7 +129,7 @@
             setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage write denied"); } }
         };
 
-        const APP_VERSION = "4.2";
+        const APP_VERSION = "4.3";
         const BUILD_ID = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
         const FIREBASE_CONFIG = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
@@ -151,14 +151,16 @@
             { name: "Amaretto Sour", ingredients: [{ name: "Disaronno Amaretto", qty: 2 }] },
             { name: "Blue MF", ingredients: [{ name: "Long Island Tea Mix", qty: 2 }, { name: "Curacao Blue", qty: 0.5 }] },
             { name: "Long Island Ice Tea", ingredients: [{ name: "Long Island Tea Mix", qty: 2 }, { name: "Triple Sec Boston", qty: 0.5 }] },
-            { name: "Screwdriver", ingredients: [{ name: "Barton Naturals Vodka", qty: 1 }] }
+            { name: "Screwdriver", ingredients: [{ name: "Barton Naturals Vodka", qty: 1 }] },
+            { name: "Cuba Libre", ingredients: [{ name: "Bacardi Light", qty: 1 }] }
         ];
 
         // Pitchers
         const PITCHER_RECIPES = [
-            { name: "Sex on the Beach PITCHER", ingredients: [{ name: "Montezuma White", qty: 10 }, { name: "Peach Schnapps Boston", qty: 10 }] }, 
-            { name: "Margarita PITCHER", ingredients: [{ name: "Montezuma White", qty: 10 }] },
-            { name: "Tequila Sunrise PITCHER", ingredients: [{ name: "Montezuma White", qty: 10 }] },
+            { name: "Sex on the Beach PITCHER", ingredients: [{ name: "Barton Naturals Vodka", qty: 5 }, { name: "Peach Schnapps Boston", qty: 5 }] }, 
+            { name: "Margarita PITCHER", ingredients: [{ name: "Montezuma White", qty: 5 }, { name: "Peach Schnapps Boston", qty: 5 }] },
+            { name: "Tequila Sunrise PITCHER", ingredients: [{ name: "Montezuma White", qty: 5 }, { name: "Peach Schnapps Boston", qty: 5 }] },
+            { name: "Jameson PITCHER", ingredients: [{ name: "Jameson", qty: 10 }] },
             { name: "Blue MF PITCHER", ingredients: [{ name: "Long Island Tea Mix", qty: 10 }, { name: "Curacao Blue", qty: 2.5 }] },
             { name: "Long Island PITCHER", ingredients: [{ name: "Long Island Tea Mix", qty: 10 }, { name: "Triple Sec Boston", qty: 2.5 }] }
         ];
@@ -774,9 +776,7 @@
                             // Check if this item is already in updates array
                             const existingUpdateIndex = updates.findIndex(u => u.id === item.id);
                             if (existingUpdateIndex >= 0) {
-                                // Add to existing update if same ingredient used multiple times (rare)
                                 updates[existingUpdateIndex].changes.sold_shots += addedShots;
-                                // Recalc sales based on new total
                                 const combinedShots = updates[existingUpdateIndex].changes.sold_shots;
                                 const combinedSales = b + ((combinedShots * 1.2) / bottleSizeOz) + c;
                                 updates[existingUpdateIndex].changes.sales = combinedSales > 0 ? combinedSales.toFixed(2) : "";
