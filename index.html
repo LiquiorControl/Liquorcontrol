@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Bar Control v4.3</title>
+    <title>Master Bar Control v4.4</title>
     
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -102,7 +102,7 @@
 <body>
     <div id="root">
         <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: rgba(240, 246, 252, 0.5); flex-direction: column; gap: 1rem;">
-            <div class="animate-pulse">Loading Master Bar Control v4.3...</div>
+            <div class="animate-pulse">Loading Master Bar Control v4.4...</div>
         </div>
     </div>
     
@@ -129,7 +129,7 @@
             setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage write denied"); } }
         };
 
-        const APP_VERSION = "4.3";
+        const APP_VERSION = "4.4";
         const BUILD_ID = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
         const FIREBASE_CONFIG = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
@@ -458,7 +458,7 @@
             );
         };
 
-        const QuickEditModal = ({ item, onClose, onUpdate, initialLocation = 'bodega' }) => {
+        const QuickEditModal = ({ item, onClose, onUpdate, initialLocation = 'bodega', initialSubZone, onLocationChange, onSubZoneChange }) => {
             if (!item) return null;
             const [activeField, setActiveField] = useState(initialLocation);
             const zonesConfig = {
@@ -468,14 +468,34 @@
             };
             const hasSubZones = zonesConfig[activeField] !== undefined;
             const currentZones = zonesConfig[activeField] || [];
-            const [subZone, setSubZone] = useState(hasSubZones ? currentZones[0].id : null);
+            
+            // Logic to determine initial subzone
+            const isValidSubZone = currentZones.some(z => z.id === initialSubZone);
+            const defaultSubZone = hasSubZones ? (isValidSubZone ? initialSubZone : currentZones[0].id) : null;
+            
+            const [subZone, setSubZone] = useState(defaultSubZone);
             const [sessionStartValue, setSessionStartValue] = useState(() => parseFloat(item[initialLocation]) || 0);
 
             const handleLocationChange = (locId) => {
                 setActiveField(locId);
+                if (onLocationChange) onLocationChange(locId); // Update parent location
+
                 const newZones = zonesConfig[locId];
-                if (newZones) { setSubZone(newZones[0].id); setSessionStartValue(parseFloat(item[locId]) || 0); } 
-                else { setSubZone(null); setSessionStartValue(parseFloat(item[locId]) || 0); }
+                if (newZones) {
+                     const newSub = newZones[0].id;
+                     setSubZone(newSub);
+                     if (onSubZoneChange) onSubZoneChange(newSub); // Update parent subzone
+                     setSessionStartValue(parseFloat(item[locId]) || 0); 
+                } else {
+                     setSubZone(null);
+                     if (onSubZoneChange) onSubZoneChange(null);
+                     setSessionStartValue(parseFloat(item[locId]) || 0);
+                }
+            };
+            
+            const handleSubZoneClick = (zId) => {
+                setSubZone(zId);
+                if (onSubZoneChange) onSubZoneChange(zId);
             };
             
             const targetField = hasSubZones ? subZone : activeField;
@@ -514,7 +534,7 @@
                         </div>
                         {hasSubZones && (
                             <div className="p-2 bg-[#16181c] border-b border-[#3A4048] overflow-x-auto animate-in">
-                                <div className="flex gap-2">{currentZones.map(zone => (<button key={zone.id} onClick={() => setSubZone(zone.id)} className={`px-3 py-1.5 rounded-md text-[10px] uppercase font-bold whitespace-nowrap transition-all flex items-center gap-1 ${subZone === zone.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50' : 'bg-[#25282e] text-[#f0f6fc]/40 border border-transparent hover:bg-[#3A4048]'}`}><span>{zone.icon}</span> {zone.label}<span className="bg-black/30 px-1.5 rounded ml-1 text-white">{parseFloat(item[zone.id]) || 0}</span></button>))}</div>
+                                <div className="flex gap-2">{currentZones.map(zone => (<button key={zone.id} onClick={() => handleSubZoneClick(zone.id)} className={`px-3 py-1.5 rounded-md text-[10px] uppercase font-bold whitespace-nowrap transition-all flex items-center gap-1 ${subZone === zone.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50' : 'bg-[#25282e] text-[#f0f6fc]/40 border border-transparent hover:bg-[#3A4048]'}`}><span>{zone.icon}</span> {zone.label}<span className="bg-black/30 px-1.5 rounded ml-1 text-white">{parseFloat(item[zone.id]) || 0}</span></button>))}</div>
                             </div>
                         )}
                         <div className="flex-1 p-6 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#121212] overflow-y-auto">
@@ -956,6 +976,9 @@
             const [pendingBarcode, setPendingBarcode] = useState(null);
             const [openCategories, setOpenCategories] = useState({});
             const [searchTerm, setSearchTerm] = useState("");
+            
+            // --- NEW: SubZone Memory State ---
+            const [lastSubZone, setLastSubZone] = useState(null);
 
             useEffect(() => {
                 const initApp = async () => {
@@ -1083,7 +1106,7 @@
                             <div className="bg-[#121212]/95 border-b border-[#3A4048] p-3 animate-in">
                                 <div className="max-w-[360px] mx-auto bg-[#1D1F23] rounded-xl border border-[#3A4048] p-2 shadow-lg">
                                     <div className="flex justify-between items-center mb-2 px-1"><span className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-2"><Icons.Scan size={12} /> SELECT ZONE TO SCAN</span><span className="text-[9px] text-[#f0f6fc]/30 font-mono">CURRENT: {currentLocation.toUpperCase()}</span></div>
-                                    <div className="grid grid-cols-5 gap-2">{[{id: 'bar1', label: 'Bar 1'}, {id: 'bar2', label: 'Bar 2'}, {id: 'bodega', label: 'Storage'}, {id: 'barroluco', label: 'Barroluco'}, {id: 'purchases', label: 'Purchases'}].map(loc => (<button key={loc.id} onClick={() => { setCurrentLocation(loc.id); setIsScanning(true); setScanAttempt(0); setShowZoneSelector(false); }} className={`aspect-square rounded-lg text-[8px] font-bold transition-all border flex flex-col items-center justify-center gap-1 ${currentLocation === loc.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_10px_rgba(79,70,229,0.4)] scale-105' : 'bg-[#0A0A0A] border-[#3A4048] text-[#f0f6fc]/50 hover:bg-[#3A4048] hover:text-white hover:border-indigo-500/50'}`}><Icons.Scan size={16} className={currentLocation === loc.id ? "text-white" : "text-indigo-500/50"}/><span className="truncate w-full text-center leading-none">{loc.label}</span></button>))}</div>
+                                    <div className="grid grid-cols-5 gap-2">{[{id: 'bar1', label: 'Bar 1'}, {id: 'bar2', label: 'Bar 2'}, {id: 'bodega', label: 'Storage'}, {id: 'barroluco', label: 'Barroluco'}, {id: 'purchases', label: 'Purchases'}].map(loc => (<button key={loc.id} onClick={() => { setCurrentLocation(loc.id); setIsScanning(true); setScanAttempt(0); setShowZoneSelector(false); setLastSubZone(null); }} className={`aspect-square rounded-lg text-[8px] font-bold transition-all border flex flex-col items-center justify-center gap-1 ${currentLocation === loc.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_10px_rgba(79,70,229,0.4)] scale-105' : 'bg-[#0A0A0A] border-[#3A4048] text-[#f0f6fc]/50 hover:bg-[#3A4048] hover:text-white hover:border-indigo-500/50'}`}><Icons.Scan size={16} className={currentLocation === loc.id ? "text-white" : "text-indigo-500/50"}/><span className="truncate w-full text-center leading-none">{loc.label}</span></button>))}</div>
                                 </div>
                             </div>
                         )}
@@ -1106,7 +1129,7 @@
                     {showSalesEntry && <SalesEntryModal isOpen={showSalesEntry} onClose={() => setShowSalesEntry(false)} data={data} onUpdate={updateItem} onBatchUpdate={batchUpdateItems} />}
                     {showCountReview && <CountReviewModal isOpen={showCountReview} onClose={() => setShowCountReview(false)} data={data} onUpdate={updateItem} />}
                     {isScanning && !isResetting && (<ScannerModal key={scanAttempt} onScanSuccess={handleScanSuccess} onClose={() => { setIsScanning(false); setScanningForItem(null); }} />)}
-                    {quickScanItemId && activeQuickItem && (<QuickEditModal item={activeQuickItem} onClose={() => { setQuickScanItemId(null); setIsScanning(true); setScanAttempt(0); }} onUpdate={updateItem} initialLocation={currentLocation}/>)}
+                    {quickScanItemId && activeQuickItem && (<QuickEditModal item={activeQuickItem} onClose={() => { setQuickScanItemId(null); setIsScanning(true); setScanAttempt(0); }} onUpdate={updateItem} initialLocation={currentLocation} initialSubZone={lastSubZone} onLocationChange={setCurrentLocation} onSubZoneChange={setLastSubZone} />)}
                     {notification && (<div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#1D1F23] text-white px-6 py-3 rounded-full shadow-2xl border border-[#3A4048] flex items-center gap-3 animate-in z-[100] whitespace-nowrap"><Icons.CheckCircle size={18} className="text-emerald-400" /><span className="font-medium text-sm">{notification}</span></div>)}
                 </div>
             );
