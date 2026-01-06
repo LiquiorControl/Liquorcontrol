@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Bar Control v4.3</title>
+    <title>Master Bar Control v5.9</title>
     
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -102,7 +102,7 @@
 <body>
     <div id="root">
         <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: rgba(240, 246, 252, 0.5); flex-direction: column; gap: 1rem;">
-            <div class="animate-pulse">Loading Master Bar Control v4.3...</div>
+            <div class="animate-pulse">Loading Master Bar Control v5.9...</div>
         </div>
     </div>
     
@@ -129,7 +129,7 @@
             setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage write denied"); } }
         };
 
-        const APP_VERSION = "4.3";
+        const APP_VERSION = "5.9";
         const BUILD_ID = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
         const FIREBASE_CONFIG = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
@@ -138,7 +138,6 @@
         const ENV_AUTH_TOKEN = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // --- RECIPES ---
-        // Single Cocktails
         const COCKTAIL_RECIPES = [
             { name: "Sex on the Beach", ingredients: [{ name: "Barton Naturals Vodka", qty: 1 }, { name: "Peach Schnapps Boston", qty: 1 }] },
             { name: "Green Tea Shot", ingredients: [{ name: "Jameson", qty: 0.5 }, { name: "Peach Schnapps Boston", qty: 0.5 }] },
@@ -176,6 +175,7 @@
             "Coca Cola": 48, "Diet Coke": 24, "Sprite": 48, "Ginger Ale": 24, "Water Bottle": 96
         };
 
+        // --- ERROR BOUNDARY ---
         class ErrorBoundary extends Component {
             constructor(props) { super(props); this.state = { hasError: false, error: null }; }
             static getDerivedStateFromError(error) { return { hasError: true, error }; }
@@ -206,6 +206,7 @@
             RefreshCw: (p) => <IconWrapper {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></IconWrapper>,
             Box: (p) => <IconWrapper {...p}><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22v-9"/></IconWrapper>,
             ArrowRight: (p) => <IconWrapper {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></IconWrapper>,
+            ArrowLeft: (p) => <IconWrapper {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></IconWrapper>,
             Trash: (p) => <IconWrapper {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></IconWrapper>,
             BarChart: (p) => <IconWrapper {...p}><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></IconWrapper>,
             Cloud: (p) => <IconWrapper {...p}><path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19"/><path d="M17.5 19c3.037 0 5.5-2.463 5.5-5.5S20.537 8 17.5 8"/><path d="M17.5 8c0-3.037-2.463-5.5-5.5-5.5S6.5 4.963 6.5 8"/><path d="M6.5 19C3.463 19 1 16.537 1 13.5S3.463 8 6.5 8"/></IconWrapper>,
@@ -458,24 +459,55 @@
             );
         };
 
-        const QuickEditModal = ({ item, onClose, onUpdate, initialLocation = 'bodega' }) => {
+        const QuickEditModal = ({ item, onClose, onUpdate, initialLocation = 'bodega', initialSubZone, onLocationChange, onSubZoneChange }) => {
             if (!item) return null;
+            // Store location state locally to persist scanning context
             const [activeField, setActiveField] = useState(initialLocation);
+            
             const zonesConfig = {
                 bar1: [{ id: 'bar1_cooler', label: 'Cooler', icon: '🧊' }, { id: 'bar1_small_cooler_1', label: 'Small 1', icon: '❄️' }, { id: 'bar1_small_cooler_2', label: 'Small 2', icon: '❄️' }, { id: 'bar1_reaching', label: 'Reaching', icon: '✋' }, { id: 'bar1_shelf', label: 'Shelf', icon: '🗄️' }, { id: 'bar1_well_1', label: 'Well 1', icon: '🥃' }, { id: 'bar1_well_2', label: 'Well 2', icon: '🥃' }],
                 bar2: [{ id: 'bar2_cooler', label: 'Cooler', icon: '🧊' }, { id: 'bar2_small_cooler', label: 'Small Cooler', icon: '❄️' }],
                 bodega: [{ id: 'bodega_closet', label: 'Closet', icon: '🚪' }, { id: 'bodega_shelves', label: 'Shelves', icon: '🗄️' }]
             };
+            
             const hasSubZones = zonesConfig[activeField] !== undefined;
             const currentZones = zonesConfig[activeField] || [];
-            const [subZone, setSubZone] = useState(hasSubZones ? currentZones[0].id : null);
+            
+            // If scanning context exists (initialSubZone provided), use it directly without defaults unless invalid
+            // This enables "Tunnel Mode" where we stick to the last used zone
+            const [subZone, setSubZone] = useState(() => {
+                if (initialSubZone && hasSubZones) {
+                   return initialSubZone;
+                }
+                return hasSubZones ? currentZones[0]?.id : null;
+            });
+
+            // If we are in "Tunnel Mode" (scanning active), we hide MAIN navigation, but KEEP SUB navigation
+            const isTunnelMode = !!initialSubZone; 
+            
             const [sessionStartValue, setSessionStartValue] = useState(() => parseFloat(item[initialLocation]) || 0);
 
+            // Handlers for manual location change (if not in tunnel mode)
             const handleLocationChange = (locId) => {
                 setActiveField(locId);
+                if (onLocationChange) onLocationChange(locId); // Notify parent
+
                 const newZones = zonesConfig[locId];
-                if (newZones) { setSubZone(newZones[0].id); setSessionStartValue(parseFloat(item[locId]) || 0); } 
-                else { setSubZone(null); setSessionStartValue(parseFloat(item[locId]) || 0); }
+                if (newZones) {
+                     const newSub = newZones[0].id;
+                     setSubZone(newSub);
+                     if (onSubZoneChange) onSubZoneChange(newSub); 
+                     setSessionStartValue(parseFloat(item[locId]) || 0); 
+                } else {
+                     setSubZone(null);
+                     if (onSubZoneChange) onSubZoneChange(null);
+                     setSessionStartValue(parseFloat(item[locId]) || 0);
+                }
+            };
+            
+            const handleSubZoneClick = (zId) => {
+                setSubZone(zId);
+                if (onSubZoneChange) onSubZoneChange(zId);
             };
             
             const targetField = hasSubZones ? subZone : activeField;
@@ -502,53 +534,107 @@
 
             const locations = [ { id: 'bodega', label: 'Storage' }, { id: 'bar1', label: 'Bar 1' }, { id: 'bar2', label: 'Bar 2' }, { id: 'barroluco', label: 'Barroluco' }, { id: 'purchases', label: 'Purchases' } ];
             
+            // Get Labels for Display
+            const locationLabel = locations.find(l => l.id === activeField)?.label;
+            const subZoneLabel = currentZones.find(z => z.id === subZone)?.label;
+
             return (
-                <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[60] backdrop-blur-md animate-in p-4">
-                    <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-4 bg-[#121212] border-b border-[#3A4048] flex justify-between items-center">
-                            <div><h2 className="text-xl font-bold text-white leading-tight">{item.name}</h2><p className="text-xs text-[#f0f6fc]/50 font-mono mt-1">Quick Edit Mode</p></div>
-                            <button onClick={onClose} className="bg-[#3A4048] hover:bg-[#4A5462] text-white p-2 rounded-full transition-colors"><span className="text-xl px-2">&times;</span></button>
+                <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[60] backdrop-blur-md animate-in p-2">
+                    {/* MODAL CONTAINER - MAXIMIZED SIZE */}
+                    <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-6xl h-full md:h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                        
+                        {/* HEADER */}
+                        <div className="p-6 bg-[#121212] border-b border-[#3A4048] flex justify-between items-center">
+                            <div>
+                                <h2 className="text-3xl font-black text-white leading-tight tracking-tight">{item.name}</h2>
+                                {/* Show Context info clearly */}
+                                <div className="text-sm text-indigo-400 font-mono mt-1 flex items-center gap-2 font-bold uppercase tracking-wider">
+                                    <Icons.MapPin size={14}/> {locationLabel} {subZoneLabel ? ` > ${subZoneLabel}` : ''}
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="bg-[#3A4048] hover:bg-[#4A5462] text-white p-4 rounded-2xl transition-colors shadow-lg active:scale-95">
+                                <span className="text-2xl font-bold px-2">✕</span>
+                            </button>
                         </div>
-                        <div className="p-2 bg-[#1D1F23] border-b border-[#3A4048] overflow-x-auto">
-                            <div className="flex gap-2">{locations.map(loc => (<button key={loc.id} onClick={() => handleLocationChange(loc.id)} className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${activeField === loc.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50' : 'bg-[#3A4048] text-[#f0f6fc]/60 hover:bg-[#4A5462]'}`}>{loc.label}</button>))}</div>
-                        </div>
-                        {hasSubZones && (
-                            <div className="p-2 bg-[#16181c] border-b border-[#3A4048] overflow-x-auto animate-in">
-                                <div className="flex gap-2">{currentZones.map(zone => (<button key={zone.id} onClick={() => setSubZone(zone.id)} className={`px-3 py-1.5 rounded-md text-[10px] uppercase font-bold whitespace-nowrap transition-all flex items-center gap-1 ${subZone === zone.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50' : 'bg-[#25282e] text-[#f0f6fc]/40 border border-transparent hover:bg-[#3A4048]'}`}><span>{zone.icon}</span> {zone.label}<span className="bg-black/30 px-1.5 rounded ml-1 text-white">{parseFloat(item[zone.id]) || 0}</span></button>))}</div>
+                        
+                        {/* MAIN LOCATION TABS (Hidden in Tunnel Mode - BUT subzones are below) */}
+                        {!isTunnelMode && (
+                            <div className="p-3 bg-[#1D1F23] border-b border-[#3A4048] overflow-x-auto">
+                                <div className="flex gap-3">
+                                    {locations.map(loc => (
+                                        <button key={loc.id} onClick={() => handleLocationChange(loc.id)} className={`px-5 py-3 rounded-xl text-sm font-bold whitespace-nowrap transition-all shadow-md ${activeField === loc.id ? 'bg-indigo-600 text-white shadow-indigo-900/50 scale-105' : 'bg-[#3A4048] text-[#f0f6fc]/60 hover:bg-[#4A5462]'}`}>{loc.label}</button>
+                                    ))}
+                                </div>
                             </div>
                         )}
-                        <div className="flex-1 p-6 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#121212] overflow-y-auto">
-                            <div className="text-center mb-8 relative w-full">
-                                <div className="text-[#f0f6fc]/50 text-sm uppercase font-bold tracking-wider mb-2">{hasSubZones ? <span>Editing: <span className="text-indigo-400">{currentZones.find(z => z.id === subZone)?.label}</span></span> : <span>Total in {locations.find(l => l.id === activeField)?.label}</span>}</div>
-                                <div className="flex flex-col items-center justify-center">
-                                    <div className="text-7xl font-black text-white font-mono tracking-tight tabular-nums relative inline-block">
-                                        {currentValue}
-                                        {lastDelta !== null && (<span className={`absolute -right-16 top-0 text-3xl font-bold ${lastDelta > 0 ? 'text-emerald-400' : 'text-red-400'} animate-float`}>{lastDelta > 0 ? '+' : ''}{lastDelta}</span>)}
-                                    </div>
-                                    <div className={`mt-2 px-4 py-1 rounded-full bg-[#0A0A0A] border border-[#3A4048] flex items-center gap-2 ${addedThisSession !== 0 ? 'opacity-100' : 'opacity-50'}`}><span className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold">Session Total:</span><span className={`text-xl font-bold font-mono ${addedColor}`}>{addedSign}{Math.round(addedThisSession * 10) / 10}</span></div>
+
+                        {/* SUB-ZONES (ALWAYS VISIBLE if they exist) */}
+                        {hasSubZones && (
+                            <div className="p-3 bg-[#16181c] border-b border-[#3A4048] overflow-x-auto animate-in">
+                                <div className="flex gap-3">
+                                    {currentZones.map(zone => (
+                                        <button key={zone.id} onClick={() => handleSubZoneClick(zone.id)} className={`px-4 py-2 rounded-lg text-xs uppercase font-bold whitespace-nowrap transition-all flex items-center gap-2 shadow-sm ${subZone === zone.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 ring-1 ring-indigo-500/50' : 'bg-[#25282e] text-[#f0f6fc]/40 border border-transparent hover:bg-[#3A4048]'}`}>
+                                            <span className="text-lg">{zone.icon}</span> {zone.label}
+                                            <span className="bg-black/30 px-2 py-0.5 rounded text-white font-mono">{parseFloat(item[zone.id]) || 0}</span>
+                                        </button>
+                                    ))}
                                 </div>
-                                {hasSubZones && (<div className="mt-4 text-xs font-mono text-[#f0f6fc]/40">Total {locations.find(l => l.id === activeField)?.label} (Sum): <span className="text-white font-bold">{item[activeField] || 0}</span></div>)}
                             </div>
-                            <div className="w-full grid grid-cols-2 gap-6">
-                                <div className="flex flex-col gap-2 items-end">
-                                    <button onClick={() => handleDelta(-24)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">- 24</button>
-                                    <button onClick={() => handleDelta(-12)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">- 12</button>
-                                    <button onClick={() => handleDelta(-6)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">- 6</button>
-                                    <button onClick={() => handleDelta(-5)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">- 5</button>
-                                    <button onClick={() => handleDelta(-1)} className="w-full bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/40 py-3 rounded-xl font-black text-xl active:scale-95 transition-all">- 1</button>
-                                    <button onClick={() => handleDelta(-0.1)} className="w-full bg-[#3A4048] hover:bg-[#4A5462] text-red-400 border border-[#4A5462] py-3 rounded-xl font-bold text-lg active:scale-95 transition-all">- 0.1</button>
+                        )}
+
+                        <div className="flex-1 p-4 md:p-8 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#0A0A0A] overflow-y-auto">
+                            <div className="text-center mb-10 relative w-full">
+                                <div className="text-[#f0f6fc]/40 text-lg uppercase font-bold tracking-widest mb-4">
+                                    Current Count: <span className="text-white">{hasSubZones ? subZoneLabel : locationLabel}</span>
                                 </div>
-                                <div className="flex flex-col gap-2 items-start">
-                                    <button onClick={() => handleDelta(24)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">+ 24</button>
-                                    <button onClick={() => handleDelta(12)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">+ 12</button>
-                                    <button onClick={() => handleDelta(6)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">+ 6</button>
-                                    <button onClick={() => handleDelta(5)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all">+ 5</button>
-                                    <button onClick={() => handleDelta(1)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/40 py-3 rounded-xl font-black text-xl active:scale-95 transition-all">+ 1</button>
-                                    <button onClick={() => handleDelta(0.1)} className="w-full bg-[#3A4048] hover:bg-[#4A5462] text-emerald-400 border border-[#4A5462] py-3 rounded-xl font-bold text-lg active:scale-95 transition-all">+ 0.1</button>
+                                <div className="flex flex-col items-center justify-center">
+                                    {/* HUGE NUMBER DISPLAY */}
+                                    <div className="text-9xl font-black text-white font-mono tracking-tighter tabular-nums relative inline-block drop-shadow-2xl">
+                                        {currentValue}
+                                        {lastDelta !== null && (
+                                            <span className={`absolute -right-24 top-0 text-5xl font-bold ${lastDelta > 0 ? 'text-emerald-400' : 'text-red-400'} animate-float`}>
+                                                {lastDelta > 0 ? '+' : ''}{lastDelta}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className={`mt-4 px-6 py-2 rounded-full bg-[#1A1A1A] border border-[#3A4048] flex items-center gap-3 ${addedThisSession !== 0 ? 'opacity-100' : 'opacity-50'}`}>
+                                        <span className="text-xs text-[#f0f6fc]/40 uppercase font-bold">Session:</span>
+                                        <span className={`text-2xl font-bold font-mono ${addedColor}`}>
+                                            {addedSign}{Math.round(addedThisSession * 10) / 10}
+                                        </span>
+                                    </div>
                                 </div>
+                            </div>
+                            
+                            {/* BUTTON GRID - MAXIMIZED FOR TOUCH */}
+                            <div className="w-full grid grid-cols-2 gap-6 max-w-4xl mx-auto">
+                                <div className="flex flex-col gap-3 items-end">
+                                    <button onClick={() => handleDelta(-24)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">- 24</button>
+                                    <button onClick={() => handleDelta(-12)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">- 12</button>
+                                    <button onClick={() => handleDelta(-6)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">- 6</button>
+                                    <button onClick={() => handleDelta(-5)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">- 5</button>
+                                    <button onClick={() => handleDelta(-1)} className="w-full bg-red-600 hover:bg-red-500 text-white border border-red-500 h-20 rounded-2xl font-black text-4xl active:scale-95 transition-all shadow-red-900/50 shadow-xl">- 1</button>
+                                </div>
+                                <div className="flex flex-col gap-3 items-start">
+                                    <button onClick={() => handleDelta(24)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">+ 24</button>
+                                    <button onClick={() => handleDelta(12)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">+ 12</button>
+                                    <button onClick={() => handleDelta(6)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">+ 6</button>
+                                    <button onClick={() => handleDelta(5)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">+ 5</button>
+                                    <button onClick={() => handleDelta(1)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500 h-20 rounded-2xl font-black text-4xl active:scale-95 transition-all shadow-emerald-900/50 shadow-xl">+ 1</button>
+                                </div>
+                            </div>
+                            
+                            <div className="w-full grid grid-cols-2 gap-6 max-w-4xl mx-auto mt-3">
+                                 <button onClick={() => handleDelta(-0.1)} className="w-full bg-[#2A2D33] hover:bg-[#3A4048] text-red-400 border border-[#3A4048] h-14 rounded-xl font-bold text-xl active:scale-95 transition-all">- 0.1</button>
+                                 <button onClick={() => handleDelta(0.1)} className="w-full bg-[#2A2D33] hover:bg-[#3A4048] text-emerald-400 border border-[#3A4048] h-14 rounded-xl font-bold text-xl active:scale-95 transition-all">+ 0.1</button>
                             </div>
                         </div>
-                        <div className="p-4 bg-[#1D1F23] border-t border-[#3A4048]"><button onClick={onClose} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-900/30">Done</button></div>
+
+                        <div className="p-6 bg-[#1D1F23] border-t border-[#3A4048] z-20">
+                            <button onClick={onClose} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-4xl h-24 rounded-2xl shadow-xl shadow-indigo-900/40 active:scale-95 transition-all tracking-wide">
+                                DONE
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
@@ -564,6 +650,88 @@
                     </div>
                     <div className="flex-1 overflow-y-auto p-4">
                         {items.length === 0 ? <div className="text-center text-[#f0f6fc]/50 mt-20"><p className="text-lg">All items are fully stocked!</p></div> : <div className="grid gap-3">{items.map((item, idx) => (<div key={idx} className="bg-[#1D1F23] p-4 rounded-xl border border-[#3A4048] flex justify-between items-center shadow-lg"><div><h3 className="font-bold text-white text-lg">{item.name}</h3><div className="text-xs text-[#f0f6fc]/50 font-mono mt-1">On Hand: <span className="text-emerald-400">{item.current}</span> / Target: <span className="text-blue-400">{item.target}</span></div></div><div className="text-right"><div className="text-[10px] text-amber-500 uppercase font-bold">To Buy</div><div className="text-2xl font-black text-amber-400">{item.needed}</div>{item.details && <div className="text-[10px] text-[#f0f6fc]/60 font-mono mt-1">{item.details}</div>}</div></div>))}</div>}
+                    </div>
+                </div>
+            );
+        };
+
+        // NEW: LOCATION SELECTION MODAL (Step 1 & 2)
+        const LocationSelectionModal = ({ isOpen, onClose, onSelect }) => {
+            if (!isOpen) return null;
+            const [selectedMain, setSelectedMain] = useState(null);
+
+            const locations = [
+                { id: 'bar1', label: 'Bar 1', icon: Icons.Beer },
+                { id: 'bar2', label: 'Bar 2', icon: Icons.Wine },
+                { id: 'bodega', label: 'Storage', icon: Icons.Box },
+                { id: 'barroluco', label: 'Barroluco', icon: Icons.MapPin },
+                { id: 'purchases', label: 'Purchases', icon: Icons.ShoppingCart }
+            ];
+
+            const zonesConfig = {
+                bar1: [{ id: 'bar1_cooler', label: 'Cooler', icon: '🧊' }, { id: 'bar1_small_cooler_1', label: 'Small 1', icon: '❄️' }, { id: 'bar1_small_cooler_2', label: 'Small 2', icon: '❄️' }, { id: 'bar1_reaching', label: 'Reaching', icon: '✋' }, { id: 'bar1_shelf', label: 'Shelf', icon: '🗄️' }, { id: 'bar1_well_1', label: 'Well 1', icon: '🥃' }, { id: 'bar1_well_2', label: 'Well 2', icon: '🥃' }],
+                bar2: [{ id: 'bar2_cooler', label: 'Cooler', icon: '🧊' }, { id: 'bar2_small_cooler', label: 'Small Cooler', icon: '❄️' }],
+                bodega: [{ id: 'bodega_closet', label: 'Closet', icon: '🚪' }, { id: 'bodega_shelves', label: 'Shelves', icon: '🗄️' }]
+            };
+
+            const handleMainClick = (locId) => {
+                if (zonesConfig[locId]) {
+                    setSelectedMain(locId); // Go to step 2
+                } else {
+                    onSelect(locId, null); // Done
+                }
+            };
+
+            return (
+                // BACKDROP SEMI-TRANSPARENTE (80%) PARA VER EL FONDO
+                <div className="fixed inset-0 bg-black/80 flex flex-col z-[100] backdrop-blur-sm animate-in p-4 items-center justify-center">
+                    {/* VENTANA FLOTANTE AJUSTADA */}
+                    <div className="w-full max-w-4xl bg-[#1D1F23] rounded-2xl border border-[#3A4048] overflow-hidden shadow-2xl flex flex-col">
+                         <div className="p-4 border-b border-[#3A4048] flex justify-between items-center bg-[#121212] shrink-0">
+                            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                                {selectedMain ? `Zone: ${locations.find(l=>l.id===selectedMain)?.label}` : "Select Location"}
+                            </h2>
+                            <button onClick={onClose} className="px-3 py-1 bg-[#3A4048] text-[#f0f6fc]/80 rounded-lg hover:bg-[#4A5462] font-bold text-[10px] border border-[#4A5462]">Cancel</button>
+                        </div>
+                        
+                        <div className="p-4 flex-1 overflow-y-auto content-start"> 
+                            {!selectedMain ? (
+                                // GRID DE 5 COLUMNAS - BOTONES PEQUEÑOS (50% MENOS)
+                                <div className="grid grid-cols-5 gap-2">
+                                {locations.map(loc => (
+                                    <button 
+                                        key={loc.id} 
+                                        onClick={() => handleMainClick(loc.id)}
+                                        className="bg-[#2A2D33] hover:bg-indigo-600 text-white p-2 rounded-xl border border-[#3A4048] flex flex-col items-center justify-center gap-1 transition-all group shadow-md active:scale-95 h-16"
+                                    >
+                                        <div className="p-1 bg-black/30 rounded-full group-hover:bg-white/10 transition-colors shrink-0">
+                                            <loc.icon size={16} />
+                                        </div>
+                                        <span className="font-bold text-[9px] text-center leading-tight">{loc.label}</span>
+                                    </button>
+                                ))}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-3 gap-2">
+                                    {zonesConfig[selectedMain].map(zone => (
+                                        <button 
+                                            key={zone.id}
+                                            onClick={() => onSelect(selectedMain, zone.id)}
+                                            className="bg-[#2A2D33] hover:bg-emerald-600 text-white p-2 rounded-xl border border-[#3A4048] flex flex-col items-center gap-1 transition-all shadow-md active:scale-95 h-16 justify-center"
+                                        >
+                                            <span className="text-lg">{zone.icon}</span>
+                                            <span className="font-bold text-[9px] text-center leading-tight">{zone.label}</span>
+                                        </button>
+                                    ))}
+                                    <button 
+                                        onClick={() => setSelectedMain(null)}
+                                        className="col-span-3 bg-[#3A4048] hover:bg-[#4A5462] text-white p-2 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-[#4A5462] mt-2 h-10"
+                                    >
+                                        ← Back
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
@@ -632,7 +800,14 @@
             }, []);
             return (
                 <div className="fixed inset-0 bg-black/95 flex flex-col z-50 animate-in">
-                    <div className="p-4 flex justify-between items-center bg-[#1D1F23] border-b border-[#3A4048]"><h3 className="text-white font-bold flex items-center gap-2"><Icons.Scan className="text-amber-500" /> Scan Barcode</h3><button onClick={onClose} className="text-[#f0f6fc]/50 hover:text-white px-3 py-1 rounded bg-[#3A4048]">Close</button></div>
+                    <div className="p-4 flex justify-between items-center bg-[#1D1F23] border-b border-[#3A4048]">
+                        <h3 className="text-white font-bold flex items-center gap-2"><Icons.Scan className="text-amber-500" /> Scan Barcode</h3>
+                        
+                        {/* EXIT BUTTON ADDED */}
+                        <button onClick={onClose} className="bg-red-900/20 text-red-400 hover:bg-red-900/40 px-3 py-1.5 rounded-lg border border-red-900/50 text-xs font-bold uppercase tracking-wider transition-colors">
+                            Exit / Change Zone
+                        </button>
+                    </div>
                     <div className="flex-1 flex flex-col items-center justify-center p-4 relative">{scanError ? <div className="bg-red-900/50 border border-red-500 p-6 rounded-xl text-center max-w-sm text-red-200">{scanError}</div> : <div id="reader" className="w-full max-w-sm bg-black rounded-xl overflow-hidden border-2 border-indigo-500/50 shadow-2xl"></div>}<div className="mt-6 text-[#f0f6fc]/40 text-sm font-medium">Position the barcode inside the box</div></div>
                 </div>
             );
@@ -956,6 +1131,11 @@
             const [pendingBarcode, setPendingBarcode] = useState(null);
             const [openCategories, setOpenCategories] = useState({});
             const [searchTerm, setSearchTerm] = useState("");
+            
+            // --- NEW: SubZone Memory State ---
+            const [lastSubZone, setLastSubZone] = useState(null);
+            // NEW: Scanned item pending location selection
+            const [scannedItemForLocationSelect, setScannedItemForLocationSelect] = useState(null);
 
             useEffect(() => {
                 const initApp = async () => {
@@ -1080,12 +1260,16 @@
                     <div className="sticky top-0 left-0 right-0 z-50 shadow-xl bg-[#1D1F23]/90 backdrop-blur-md">
                         <Header onNewPeriod={confirmNewPeriod} onClearAll={confirmClearAll} onDownload={downloadReport} onDownloadPDF={generatePDF} onShowCharts={() => setShowCharts(true)} onBackup={handleBackup} onRestore={() => fileInputRef.current.click()} isCloud={isCloud} onShopping={generateShoppingList} onShowPurchasesLog={() => setShowPurchasesLog(true)} onShowSalesEntry={() => setShowSalesEntry(true)} logoSrc={logo} onLogoUpload={handleLogoChange} onAddProduct={() => setShowAddProduct(true)} onShowCount={() => setShowCountReview(true)} isSaving={isSaving} onToggleSearch={() => setShowSearch(!showSearch)} showSearch={showSearch} onToggleZoneSelector={() => setShowZoneSelector(!showZoneSelector)} showZoneSelector={showZoneSelector} />
                         {showZoneSelector && (
-                            <div className="bg-[#121212]/95 border-b border-[#3A4048] p-3 animate-in">
-                                <div className="max-w-[360px] mx-auto bg-[#1D1F23] rounded-xl border border-[#3A4048] p-2 shadow-lg">
-                                    <div className="flex justify-between items-center mb-2 px-1"><span className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-2"><Icons.Scan size={12} /> SELECT ZONE TO SCAN</span><span className="text-[9px] text-[#f0f6fc]/30 font-mono">CURRENT: {currentLocation.toUpperCase()}</span></div>
-                                    <div className="grid grid-cols-5 gap-2">{[{id: 'bar1', label: 'Bar 1'}, {id: 'bar2', label: 'Bar 2'}, {id: 'bodega', label: 'Storage'}, {id: 'barroluco', label: 'Barroluco'}, {id: 'purchases', label: 'Purchases'}].map(loc => (<button key={loc.id} onClick={() => { setCurrentLocation(loc.id); setIsScanning(true); setScanAttempt(0); setShowZoneSelector(false); }} className={`aspect-square rounded-lg text-[8px] font-bold transition-all border flex flex-col items-center justify-center gap-1 ${currentLocation === loc.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_10px_rgba(79,70,229,0.4)] scale-105' : 'bg-[#0A0A0A] border-[#3A4048] text-[#f0f6fc]/50 hover:bg-[#3A4048] hover:text-white hover:border-indigo-500/50'}`}><Icons.Scan size={16} className={currentLocation === loc.id ? "text-white" : "text-indigo-500/50"}/><span className="truncate w-full text-center leading-none">{loc.label}</span></button>))}</div>
-                                </div>
-                            </div>
+                            <LocationSelectionModal 
+                                isOpen={showZoneSelector} 
+                                onClose={() => setShowZoneSelector(false)}
+                                onSelect={(main, sub) => {
+                                    setCurrentLocation(main);
+                                    setLastSubZone(sub); // Set initial subzone context
+                                    setIsScanning(true); // Start scanner
+                                    setShowZoneSelector(false); // Close selector
+                                }}
+                            />
                         )}
                         {showSearch && (
                             <div className="bg-[#0A0A0A]/90 p-4 border-b border-[#3A4048] backdrop-blur-sm animate-in"><div className="max-w-5xl mx-auto relative flex gap-2"><div className="relative flex-1"><Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f0f6fc]/50" size={20} /><input type="text" placeholder="Search product..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[#1D1F23] rounded-xl pl-10 pr-4 py-3 text-white border border-[#3A4048] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-[#f0f6fc]/40" autoFocus/></div><button onClick={() => { setShowSearch(false); setSearchTerm(""); }} className="bg-[#3A4048] hover:bg-[#4A5462] text-white px-4 rounded-xl font-bold border border-[#4A5462]">✕</button></div></div>
@@ -1106,7 +1290,21 @@
                     {showSalesEntry && <SalesEntryModal isOpen={showSalesEntry} onClose={() => setShowSalesEntry(false)} data={data} onUpdate={updateItem} onBatchUpdate={batchUpdateItems} />}
                     {showCountReview && <CountReviewModal isOpen={showCountReview} onClose={() => setShowCountReview(false)} data={data} onUpdate={updateItem} />}
                     {isScanning && !isResetting && (<ScannerModal key={scanAttempt} onScanSuccess={handleScanSuccess} onClose={() => { setIsScanning(false); setScanningForItem(null); }} />)}
-                    {quickScanItemId && activeQuickItem && (<QuickEditModal item={activeQuickItem} onClose={() => { setQuickScanItemId(null); setIsScanning(true); setScanAttempt(0); }} onUpdate={updateItem} initialLocation={currentLocation}/>)}
+                    {quickScanItemId && activeQuickItem && (
+                        <QuickEditModal 
+                            item={activeQuickItem} 
+                            onClose={() => { 
+                                setQuickScanItemId(null); 
+                                setIsScanning(true); // Restart scanning loop
+                                setScanAttempt(prev => prev + 1); 
+                            }} 
+                            onUpdate={updateItem} 
+                            initialLocation={currentLocation} 
+                            initialSubZone={lastSubZone} // Enable tunnel mode if subzone is set
+                            onLocationChange={setCurrentLocation} 
+                            onSubZoneChange={setLastSubZone} 
+                        />
+                    )}
                     {notification && (<div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#1D1F23] text-white px-6 py-3 rounded-full shadow-2xl border border-[#3A4048] flex items-center gap-3 animate-in z-[100] whitespace-nowrap"><Icons.CheckCircle size={18} className="text-emerald-400" /><span className="font-medium text-sm">{notification}</span></div>)}
                 </div>
             );
