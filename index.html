@@ -474,13 +474,10 @@
             const currentZones = zonesConfig[activeField] || [];
             
             // If scanning context exists (initialSubZone provided), use it directly without defaults unless invalid
-            // This enables "Tunnel Mode" where we stick to the last used zone
-            const [subZone, setSubZone] = useState(() => {
-                if (initialSubZone && hasSubZones) {
-                   return initialSubZone;
-                }
-                return hasSubZones ? currentZones[0]?.id : null;
-            });
+            const isValidSubZone = currentZones.some(z => z.id === initialSubZone);
+            const defaultSubZone = hasSubZones ? (isValidSubZone ? initialSubZone : currentZones[0]?.id) : null;
+            
+            const [subZone, setSubZone] = useState(defaultSubZone);
 
             // If we are in "Tunnel Mode" (scanning active), we hide MAIN navigation, but KEEP SUB navigation
             const isTunnelMode = !!initialSubZone; 
@@ -540,29 +537,29 @@
 
             return (
                 <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[60] backdrop-blur-md animate-in p-2">
-                    {/* MODAL CONTAINER - MAXIMIZED SIZE (5xl and 85vh) */}
-                    <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-5xl h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                    {/* MODAL CONTAINER - MAXIMIZED SIZE (Reduced max-w from 5xl to 4xl and height) */}
+                    <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-4xl h-[80vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
                         
                         {/* HEADER */}
-                        <div className="p-6 bg-[#121212] border-b border-[#3A4048] flex justify-between items-center">
+                        <div className="p-4 bg-[#121212] border-b border-[#3A4048] flex justify-between items-center">
                             <div>
-                                <h2 className="text-3xl font-black text-white leading-tight tracking-tight">{item.name}</h2>
+                                <h2 className="text-2xl font-black text-white leading-tight tracking-tight">{item.name}</h2>
                                 {/* Show Context info clearly */}
-                                <div className="text-sm text-indigo-400 font-mono mt-1 flex items-center gap-2 font-bold uppercase tracking-wider">
-                                    <Icons.MapPin size={14}/> {locationLabel} {subZoneLabel ? ` > ${subZoneLabel}` : ''}
+                                <div className="text-xs text-indigo-400 font-mono mt-1 flex items-center gap-2 font-bold uppercase tracking-wider">
+                                    <Icons.MapPin size={12}/> {locationLabel} {subZoneLabel ? ` > ${subZoneLabel}` : ''}
                                 </div>
                             </div>
-                            <button onClick={onClose} className="bg-[#3A4048] hover:bg-[#4A5462] text-white p-4 rounded-2xl transition-colors shadow-lg active:scale-95">
-                                <span className="text-2xl font-bold px-2">✕</span>
+                            <button onClick={onClose} className="bg-[#3A4048] hover:bg-[#4A5462] text-white p-3 rounded-xl transition-colors shadow-lg active:scale-95">
+                                <span className="text-xl font-bold px-2">✕</span>
                             </button>
                         </div>
                         
                         {/* MAIN LOCATION TABS (Hidden in Tunnel Mode - BUT subzones are below) */}
                         {!isTunnelMode && (
-                            <div className="p-3 bg-[#1D1F23] border-b border-[#3A4048] overflow-x-auto">
-                                <div className="flex gap-3">
+                            <div className="p-2 bg-[#1D1F23] border-b border-[#3A4048] overflow-x-auto">
+                                <div className="flex gap-2">
                                     {locations.map(loc => (
-                                        <button key={loc.id} onClick={() => handleLocationChange(loc.id)} className={`px-5 py-3 rounded-xl text-sm font-bold whitespace-nowrap transition-all shadow-md ${activeField === loc.id ? 'bg-indigo-600 text-white shadow-indigo-900/50 scale-105' : 'bg-[#3A4048] text-[#f0f6fc]/60 hover:bg-[#4A5462]'}`}>{loc.label}</button>
+                                        <button key={loc.id} onClick={() => handleLocationChange(loc.id)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all shadow-md ${activeField === loc.id ? 'bg-indigo-600 text-white shadow-indigo-900/50 scale-105' : 'bg-[#3A4048] text-[#f0f6fc]/60 hover:bg-[#4A5462]'}`}>{loc.label}</button>
                                     ))}
                                 </div>
                             </div>
@@ -570,11 +567,11 @@
 
                         {/* SUB-ZONES (ALWAYS VISIBLE if they exist) */}
                         {hasSubZones && (
-                            <div className="p-3 bg-[#16181c] border-b border-[#3A4048] overflow-x-auto animate-in">
-                                <div className="flex gap-3">
+                            <div className="p-2 bg-[#16181c] border-b border-[#3A4048] overflow-x-auto animate-in">
+                                <div className="flex gap-2">
                                     {currentZones.map(zone => (
-                                        <button key={zone.id} onClick={() => handleSubZoneClick(zone.id)} className={`px-4 py-2 rounded-lg text-xs uppercase font-bold whitespace-nowrap transition-all flex items-center gap-2 shadow-sm ${subZone === zone.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 ring-1 ring-indigo-500/50' : 'bg-[#25282e] text-[#f0f6fc]/40 border border-transparent hover:bg-[#3A4048]'}`}>
-                                            <span className="text-lg">{zone.icon}</span> {zone.label}
+                                        <button key={zone.id} onClick={() => handleSubZoneClick(zone.id)} className={`px-3 py-1.5 rounded-md text-[10px] uppercase font-bold whitespace-nowrap transition-all flex items-center gap-2 shadow-sm ${subZone === zone.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 ring-1 ring-indigo-500/50' : 'bg-[#25282e] text-[#f0f6fc]/40 border border-transparent hover:bg-[#3A4048]'}`}>
+                                            <span className="text-base">{zone.icon}</span> {zone.label}
                                             <span className="bg-black/30 px-2 py-0.5 rounded text-white font-mono">{parseFloat(item[zone.id]) || 0}</span>
                                         </button>
                                     ))}
@@ -582,58 +579,58 @@
                             </div>
                         )}
 
-                        <div className="flex-1 p-4 md:p-8 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#0A0A0A] overflow-y-auto">
-                            <div className="text-center mb-10 relative w-full">
-                                <div className="text-[#f0f6fc]/40 text-lg uppercase font-bold tracking-widest mb-4">
+                        <div className="flex-1 p-4 md:p-6 flex flex-col items-center justify-center bg-gradient-to-b from-[#1D1F23] to-[#0A0A0A] overflow-y-auto">
+                            <div className="text-center mb-6 relative w-full">
+                                <div className="text-[#f0f6fc]/40 text-sm uppercase font-bold tracking-widest mb-2">
                                     Current Count: <span className="text-white">{hasSubZones ? subZoneLabel : locationLabel}</span>
                                 </div>
                                 <div className="flex flex-col items-center justify-center">
-                                    {/* NUMBER DISPLAY (Reduced size by approx 40%) */}
-                                    <div className="text-7xl font-black text-white font-mono tracking-tighter tabular-nums relative inline-block drop-shadow-2xl">
+                                    {/* NUMBER DISPLAY (Reduced size by approx 30-40%) */}
+                                    <div className="text-6xl font-black text-white font-mono tracking-tighter tabular-nums relative inline-block drop-shadow-2xl">
                                         {currentValue}
                                         {lastDelta !== null && (
-                                            /* Delta Indicators (Reduced size by approx 20%) */
-                                            <span className={`absolute -right-16 top-0 text-4xl font-bold ${lastDelta > 0 ? 'text-emerald-400' : 'text-red-400'} animate-float`}>
+                                            /* Delta Indicators (Reduced size) */
+                                            <span className={`absolute -right-12 top-0 text-3xl font-bold ${lastDelta > 0 ? 'text-emerald-400' : 'text-red-400'} animate-float`}>
                                                 {lastDelta > 0 ? '+' : ''}{lastDelta}
                                             </span>
                                         )}
                                     </div>
-                                    <div className={`mt-4 px-6 py-2 rounded-full bg-[#1A1A1A] border border-[#3A4048] flex items-center gap-3 ${addedThisSession !== 0 ? 'opacity-100' : 'opacity-50'}`}>
-                                        <span className="text-xs text-[#f0f6fc]/40 uppercase font-bold">Session:</span>
-                                        <span className={`text-2xl font-bold font-mono ${addedColor}`}>
+                                    <div className={`mt-3 px-4 py-1.5 rounded-full bg-[#1A1A1A] border border-[#3A4048] flex items-center gap-3 ${addedThisSession !== 0 ? 'opacity-100' : 'opacity-50'}`}>
+                                        <span className="text-[10px] text-[#f0f6fc]/40 uppercase font-bold">Session:</span>
+                                        <span className={`text-xl font-bold font-mono ${addedColor}`}>
                                             {addedSign}{Math.round(addedThisSession * 10) / 10}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             
-                            {/* BUTTON GRID - MAXIMIZED FOR TOUCH */}
-                            <div className="w-full grid grid-cols-2 gap-6 max-w-4xl mx-auto">
-                                <div className="flex flex-col gap-3 items-end">
-                                    <button onClick={() => handleDelta(-24)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">- 24</button>
-                                    <button onClick={() => handleDelta(-12)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">- 12</button>
-                                    <button onClick={() => handleDelta(-6)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">- 6</button>
-                                    <button onClick={() => handleDelta(-5)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">- 5</button>
-                                    <button onClick={() => handleDelta(-1)} className="w-full bg-red-600 hover:bg-red-500 text-white border border-red-500 h-20 rounded-2xl font-black text-4xl active:scale-95 transition-all shadow-red-900/50 shadow-xl">- 1</button>
+                            {/* BUTTON GRID - REDUCED SIZES */}
+                            <div className="w-full grid grid-cols-2 gap-4 max-w-3xl mx-auto">
+                                <div className="flex flex-col gap-2 items-end">
+                                    <button onClick={() => handleDelta(-24)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-11 rounded-lg font-bold text-sm active:scale-95 transition-all shadow-lg">- 24</button>
+                                    <button onClick={() => handleDelta(-12)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-11 rounded-lg font-bold text-sm active:scale-95 transition-all shadow-lg">- 12</button>
+                                    <button onClick={() => handleDelta(-6)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-11 rounded-lg font-bold text-sm active:scale-95 transition-all shadow-lg">- 6</button>
+                                    <button onClick={() => handleDelta(-5)} className="w-full bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/50 h-11 rounded-lg font-bold text-sm active:scale-95 transition-all shadow-lg">- 5</button>
+                                    <button onClick={() => handleDelta(-1)} className="w-full bg-red-600 hover:bg-red-500 text-white border border-red-500 h-14 rounded-xl font-black text-2xl active:scale-95 transition-all shadow-red-900/50 shadow-xl">- 1</button>
                                 </div>
-                                <div className="flex flex-col gap-3 items-start">
-                                    <button onClick={() => handleDelta(24)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">+ 24</button>
-                                    <button onClick={() => handleDelta(12)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">+ 12</button>
-                                    <button onClick={() => handleDelta(6)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">+ 6</button>
-                                    <button onClick={() => handleDelta(5)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-16 rounded-xl font-bold text-lg active:scale-95 transition-all shadow-lg">+ 5</button>
-                                    <button onClick={() => handleDelta(1)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500 h-20 rounded-2xl font-black text-4xl active:scale-95 transition-all shadow-emerald-900/50 shadow-xl">+ 1</button>
+                                <div className="flex flex-col gap-2 items-start">
+                                    <button onClick={() => handleDelta(24)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-11 rounded-lg font-bold text-sm active:scale-95 transition-all shadow-lg">+ 24</button>
+                                    <button onClick={() => handleDelta(12)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-11 rounded-lg font-bold text-sm active:scale-95 transition-all shadow-lg">+ 12</button>
+                                    <button onClick={() => handleDelta(6)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-11 rounded-lg font-bold text-sm active:scale-95 transition-all shadow-lg">+ 6</button>
+                                    <button onClick={() => handleDelta(5)} className="w-full bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-500 border border-emerald-900/50 h-11 rounded-lg font-bold text-sm active:scale-95 transition-all shadow-lg">+ 5</button>
+                                    <button onClick={() => handleDelta(1)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500 h-14 rounded-xl font-black text-2xl active:scale-95 transition-all shadow-emerald-900/50 shadow-xl">+ 1</button>
                                 </div>
                             </div>
                             
-                            <div className="w-full grid grid-cols-2 gap-6 max-w-4xl mx-auto mt-3">
-                                 <button onClick={() => handleDelta(-0.1)} className="w-full bg-[#2A2D33] hover:bg-[#3A4048] text-red-400 border border-[#3A4048] h-14 rounded-xl font-bold text-xl active:scale-95 transition-all">- 0.1</button>
-                                 <button onClick={() => handleDelta(0.1)} className="w-full bg-[#2A2D33] hover:bg-[#3A4048] text-emerald-400 border border-[#3A4048] h-14 rounded-xl font-bold text-xl active:scale-95 transition-all">+ 0.1</button>
+                            <div className="w-full grid grid-cols-2 gap-4 max-w-3xl mx-auto mt-2">
+                                 <button onClick={() => handleDelta(-0.1)} className="w-full bg-[#2A2D33] hover:bg-[#3A4048] text-red-400 border border-[#3A4048] h-10 rounded-lg font-bold text-base active:scale-95 transition-all">- 0.1</button>
+                                 <button onClick={() => handleDelta(0.1)} className="w-full bg-[#2A2D33] hover:bg-[#3A4048] text-emerald-400 border border-[#3A4048] h-10 rounded-lg font-bold text-base active:scale-95 transition-all">+ 0.1</button>
                             </div>
                         </div>
 
                         <div className="p-4 bg-[#1D1F23] border-t border-[#3A4048] z-20">
-                            {/* DONE BUTTON (Reduced size by 50%) */}
-                            <button onClick={onClose} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xl h-12 rounded-xl shadow-xl shadow-indigo-900/40 active:scale-95 transition-all tracking-wide flex items-center justify-center">
+                            {/* DONE BUTTON (Reduced size) */}
+                            <button onClick={onClose} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg h-10 rounded-lg shadow-xl shadow-indigo-900/40 active:scale-95 transition-all tracking-wide flex items-center justify-center">
                                 DONE
                             </button>
                         </div>
