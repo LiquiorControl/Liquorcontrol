@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Bar Control v5.9</title>
+    <title>Master Bar Control v6.0</title>
     
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -102,7 +102,7 @@
 <body>
     <div id="root">
         <div style="height: 100vh; display: flex; align-items: center; justify-content: center; color: rgba(240, 246, 252, 0.5); flex-direction: column; gap: 1rem;">
-            <div class="animate-pulse">Loading Master Bar Control v5.9...</div>
+            <div class="animate-pulse">Loading Master Bar Control v6.0...</div>
         </div>
     </div>
     
@@ -129,7 +129,7 @@
             setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage write denied"); } }
         };
 
-        const APP_VERSION = "5.9";
+        const APP_VERSION = "6.0";
         const BUILD_ID = new Date().toISOString().split('T')[0].replace(/-/g, '');
 
         const FIREBASE_CONFIG = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
@@ -540,8 +540,8 @@
 
             return (
                 <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[60] backdrop-blur-md animate-in p-2">
-                    {/* MODAL CONTAINER - MAXIMIZED SIZE */}
-                    <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-6xl h-full md:h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                    {/* MODAL CONTAINER - MAXIMIZED SIZE (5xl and 85vh) */}
+                    <div className="bg-[#1D1F23] border border-[#3A4048] w-full max-w-5xl h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
                         
                         {/* HEADER */}
                         <div className="p-6 bg-[#121212] border-b border-[#3A4048] flex justify-between items-center">
